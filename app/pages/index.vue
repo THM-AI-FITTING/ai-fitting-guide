@@ -8,7 +8,7 @@
       </p>
       <div class="cta-group">
         <NuxtLink to="/test" class="btn-primary">지금 체험하기</NuxtLink>
-        <NuxtLink to="/docs/upload" class="btn-secondary">문서 읽기</NuxtLink>
+        <NuxtLink to="/docs" class="btn-secondary">문서 읽기</NuxtLink>
       </div>
     </section>
 
