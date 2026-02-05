@@ -64,7 +64,7 @@ onUnmounted(() => {
 .zoom-modal-content {
   position: relative;
   max-width: 90vw;
-  max-height: 90vh;
+  max-height: 85vh; /* Reduced from 90vh to accommodate close button */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -72,7 +72,7 @@ onUnmounted(() => {
 
 .zoomed-image {
   max-width: 100%;
-  max-height: 90vh;
+  max-height: 85vh;
   object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
