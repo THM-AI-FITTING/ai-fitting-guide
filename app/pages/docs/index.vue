@@ -277,6 +277,13 @@ public void pollResult(String requestId) throws Exception {
         </div>
       </section>
     </div>
+
+    <!-- Toast Notification -->
+    <Transition name="toast">
+      <div v-if="showToast" class="toast glass">
+        클립보드에 복사됨
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -297,6 +304,9 @@ const selectedLangs = ref({
   upload: 'js',
   polling: 'js'
 })
+
+const showToast = ref(false)
+let toastTimeout = null
 
 const highlightAll = () => {
   nextTick(() => {
@@ -324,7 +334,11 @@ const copyCode = (id) => {
   if (el) {
     const code = el.innerText
     navigator.clipboard.writeText(code).then(() => {
-      alert('Code copied to clipboard!')
+      showToast.value = true
+      if (toastTimeout) clearTimeout(toastTimeout)
+      toastTimeout = setTimeout(() => {
+        showToast.value = false
+      }, 2000)
     })
   }
 }
@@ -676,6 +690,35 @@ code {
   opacity: 0.7;
   margin-left: 0.5rem;
   text-transform: none;
+}
+
+/* Toast Notification */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.8rem 1.5rem;
+  background: var(--surface-color);
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  z-index: 1000;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 20px);
 }
 
 .lang-tabs {
