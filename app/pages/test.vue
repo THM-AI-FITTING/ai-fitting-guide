@@ -1,5 +1,6 @@
 <template>
   <div class="test-container">
+    <ImageZoomModal :show="isZoomModalOpen" :image-url="zoomUrl" @close="isZoomModalOpen = false" />
     <div class="header-group">
       <h2 class="gradient-text">가상 피팅 체험하기</h2>
       <p>본인의 이미지를 업로드하여 AI 피팅 엔진을 테스트해보세요.</p>
@@ -26,7 +27,17 @@
       <div class="upload-card glass" :class="{ 'has-file': personFile }">
         <h3>인물 이미지</h3>
         <div class="drop-zone" @click="$refs.personInput.click()">
-          <img v-if="personPreview" :src="personPreview" class="preview" />
+          <div class="image-wrapper" v-if="personPreview" @dblclick.stop="openZoomModal(personPreview)">
+            <img :src="personPreview" class="preview" />
+            <div class="zoom-overlay" @click.stop="openZoomModal(personPreview)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <line x1="11" y1="8" x2="11" y2="14"></line>
+                <line x1="8" y1="11" x2="14" y2="11"></line>
+              </svg>
+            </div>
+          </div>
           <div v-else class="placeholder">
             <span>+</span>
             <p>인물 사진 선택</p>
@@ -38,7 +49,17 @@
       <div class="upload-card glass" :class="{ 'has-file': productFile || productUrl }">
         <h3>의류 이미지</h3>
         <div class="drop-zone" @click="$refs.productInput.click()">
-          <img v-if="productPreview || productUrl" :src="productPreview || productUrl" class="preview" />
+          <div class="image-wrapper" v-if="productPreview || productUrl" @dblclick.stop="openZoomModal(productPreview || productUrl)">
+            <img :src="productPreview || productUrl" class="preview" />
+            <div class="zoom-overlay" @click.stop="openZoomModal(productPreview || productUrl)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <line x1="11" y1="8" x2="11" y2="14"></line>
+                <line x1="8" y1="11" x2="14" y2="11"></line>
+              </svg>
+            </div>
+          </div>
           <div v-else class="placeholder">
             <span>+</span>
             <p>의류 사진 선택</p>
@@ -67,7 +88,17 @@
             <div class="loader"></div>
             <p>{{ statusMessage }}</p>
           </div>
-          <img v-else-if="resultUrl" :src="resultUrl" class="preview" />
+          <div class="image-wrapper" v-else-if="resultUrl" @dblclick.stop="openZoomModal(resultUrl)">
+            <img :src="resultUrl" class="preview" />
+            <div class="zoom-overlay" @click.stop="openZoomModal(resultUrl)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <line x1="11" y1="8" x2="11" y2="14"></line>
+                <line x1="8" y1="11" x2="14" y2="11"></line>
+              </svg>
+            </div>
+          </div>
           <div v-else class="placeholder">
             <p>결과가 여기에 표시됩니다</p>
           </div>
@@ -108,6 +139,15 @@ const resultUrl = ref(null);
 const loading = ref(false);
 const statusMessage = ref('');
 const requestId = ref(null);
+
+// Zoom Modal State
+const isZoomModalOpen = ref(false);
+const zoomUrl = ref('');
+
+const openZoomModal = (url) => {
+  zoomUrl.value = url;
+  isZoomModalOpen.value = true;
+};
 
 // Modal state
 const showErrorModal = ref(false);
@@ -338,7 +378,43 @@ const pollResult = async () => {
 
 .drop-zone:hover { border-color: var(--primary-color); background: rgba(255, 255, 255, 0.02); }
 
+
+
+.image-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
 .preview { width: 100%; height: 100%; object-fit: cover; }
+
+.zoom-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.zoom-overlay:hover {
+  background: var(--primary-color);
+  transform: scale(1.1);
+}
+
+.drop-zone:hover .zoom-overlay,
+.result-zone:hover .zoom-overlay {
+  opacity: 1;
+}
 
 .placeholder { text-align: center; color: var(--text-muted); }
 .placeholder span { font-size: 2rem; }
@@ -487,24 +563,49 @@ const pollResult = async () => {
 }
 
 @media (max-width: 992px) {
-  .upload-grid { grid-template-columns: 1fr; }
+  .test-container {
+    gap: 1.5rem; /* Reduced from 2rem */
+  }
+
+  .upload-grid { 
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 1rem;
+    padding-bottom: 0.5rem; /* Reduced from 1rem */
+    width: 100%; /* Strict width constraint */
+    -webkit-overflow-scrolling: touch;
+  }
+  
   .config-panel { width: 100%; }
+
+  .upload-card, .result-card {
+    flex: 0 0 100%; /* Show one card at a time fully, or maybe 95%? Let's try 100% for cleaner look inside the box */
+    width: 100%;
+    scroll-snap-align: center;
+  }
 }
 
 @media (max-width: 768px) {
   .header-group h2 { font-size: 1.8rem; }
   
   .upload-card, .result-card {
-    padding: 1rem;
+    padding: 1.5rem; /* Restore padding or keep consistent */
+    min-height: 60vh; /* Make card tall enough */
+    justify-content: space-between; /* Ensure content is spread */
   }
   
-  .drop-zone {
-    aspect-ratio: 4/3; /* slightly shorter on mobile to save vertical space */
+  .drop-zone, .result-zone {
+    aspect-ratio: auto;
+    flex: 1;
+    width: 100%;
+    margin-top: 1rem;
   }
 
   .action-bar {
     flex-direction: column;
     width: 100%;
+    margin-top: 0; /* Remove extra margin on mobile */
   }
 
   .btn-primary, .btn-secondary {
@@ -513,7 +614,7 @@ const pollResult = async () => {
   }
   
   .modal-content {
-    width: 95%;
+    width: 90%;
     padding: 1.5rem;
   }
 }

@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-const theme = useState('theme', () => 'dark');
+const theme = useState('theme', () => 'light');
 
 const toggleTheme = () => {
   theme.value = theme.value === 'dark' ? 'light' : 'dark';
@@ -40,9 +40,15 @@ onMounted(() => {
   const saved = localStorage.getItem('theme');
   if (saved) {
     theme.value = saved;
-  } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-    theme.value = 'light';
   }
+  // Remove system preference check to strictly follow "Default is Light" unless saved preference exists.
+  // Or, we can support system perference but default to Light if no preference.
+  // Since user said "Make default light", I will prioritize that.
+  
+  // Optional: If you still want to respect system Dark mode if user specifically has it:
+  // else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  //   theme.value = 'dark';
+  // }
 });
 
 useHead({
@@ -184,7 +190,7 @@ useHead({
 
   .content {
     padding-top: 8.5rem; /* Adjusted for taller mobile navbar */
-    width: 95%;
+    width: 90%;
   }
 
   .nav-links {
