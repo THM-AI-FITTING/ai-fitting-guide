@@ -20,6 +20,15 @@
 
     <!-- Main Content -->
     <div class="docs-content">
+      <!-- Security Notice -->
+      <div class="security-notice glass">
+        <div class="notice-icon">⚠️</div>
+        <div class="notice-text">
+          <p><strong>보안 알림:</strong> 저희 가상 피팅 API는 보안을 위해 파트너사 서버(Backend)에서 호출하는 것을 권장합니다.</p>
+          <p>클라이언트에서 직접 호출 시 API Key 탈취 및 데이터 변조의 위험이 있으며, 이로 인한 부정 사용량에 대해서는 책임지지 않습니다.</p>
+        </div>
+      </div>
+
       <!-- Upload Section -->
       <section id="upload" class="doc-section">
         <div class="header-group">
@@ -60,6 +69,57 @@
         </div>
 
         <div class="doc-block">
+          <h3>요청 예시</h3>
+          <div class="code-wrapper glass" :class="{ 'collapsed': !expandedBlocks.upload }">
+            <div class="code-header" @click="toggleBlock('upload')">
+              <div class="lang-tabs" @click.stop>
+                <button :class="{ active: selectedLangs.upload === 'js' }" @click="selectedLangs.upload = 'js'">JavaScript</button>
+                <button :class="{ active: selectedLangs.upload === 'java' }" @click="selectedLangs.upload = 'java'">Java</button>
+              </div>
+              <div class="code-actions">
+                <button class="copy-btn" @click.stop="copyCode(selectedLangs.upload === 'js' ? 'upload-code-js' : 'upload-code-java')">Copy</button>
+                <div class="toggle-icon">{{ expandedBlocks.upload ? '▲' : '▼' }}</div>
+              </div>
+            </div>
+            
+            <pre v-if="selectedLangs.upload === 'js'" id="upload-code-js"><code class="language-javascript">const formData = new FormData();
+formData.append('person', personFileInput.files[0]);
+formData.append('product', productFileInput.files[0]);
+formData.append('userId', 'user_123');
+
+const response = await fetch('https://api.yourservice.com/fitting/upload', {
+  method: 'POST',
+  headers: { 'x-api-key': 'YOUR_API_KEY' },
+  body: formData
+});
+
+const data = await response.json();
+console.log(data);</code></pre>
+
+            <pre v-if="selectedLangs.upload === 'java'" id="upload-code-java"><code class="language-java">// Using Java 11+ HttpClient
+import java.net.http.*;
+import java.nio.file.Path;
+
+var client = HttpClient.newHttpClient();
+var multipartBody = MultipartBodyPublisher.newBuilder()
+    .addPart("person", Path.of("person.jpg"))
+    .addPart("product", Path.of("product.jpg"))
+    .addPart("userId", "user_123")
+    .build();
+
+var request = HttpRequest.newBuilder()
+    .uri(URI.create("https://api.yourservice.com/fitting/upload"))
+    .header("x-api-key", "YOUR_API_KEY")
+    .header("Content-Type", "multipart/form-data; boundary=" + multipartBody.getBoundary())
+    .POST(multipartBody.asPublisher())
+    .build();
+
+var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+System.out.println(response.body());</code></pre>
+          </div>
+        </div>
+
+        <div class="doc-block">
           <h3>응답 예시</h3>
           <pre class="glass"><code>{
   "requestId": "req_20260201_abcdefg",
@@ -93,6 +153,60 @@
               <tr><td>requestId</td><td>String</td><td>예</td><td>업로드 요청에서 반환된 ID.</td></tr>
             </tbody>
           </table>
+        </div>
+
+        <div class="doc-block">
+          <h3>Polling 예시</h3>
+          <div class="code-wrapper glass" :class="{ 'collapsed': !expandedBlocks.polling }">
+            <div class="code-header" @click="toggleBlock('polling')">
+              <div class="lang-tabs" @click.stop>
+                <button :class="{ active: selectedLangs.polling === 'js' }" @click="selectedLangs.polling = 'js'">JavaScript</button>
+                <button :class="{ active: selectedLangs.polling === 'java' }" @click="selectedLangs.polling = 'java'">Java</button>
+              </div>
+              <div class="code-actions">
+                <button class="copy-btn" @click.stop="copyCode(selectedLangs.polling === 'js' ? 'polling-code-js' : 'polling-code-java')">Copy</button>
+                <div class="toggle-icon">{{ expandedBlocks.polling ? '▲' : '▼' }}</div>
+              </div>
+            </div>
+
+            <pre v-if="selectedLangs.polling === 'js'" id="polling-code-js"><code class="language-javascript">const pollResult = async (requestId) => {
+  const checkStatus = async () => {
+    const res = await fetch(`.../result?requestId=${requestId}`, {
+      headers: { 'x-api-key': 'YOUR_API_KEY' }
+    });
+    const data = await res.json();
+    
+    if (data.status === 'DONE') {
+      console.log('Result:', data.resultUrl);
+    } else {
+      setTimeout(checkStatus, 3000);
+    }
+  };
+  checkStatus();
+};</code></pre>
+
+            <pre v-if="selectedLangs.polling === 'java'" id="polling-code-java"><code class="language-java">// Using Java 11+ HttpClient
+public void pollResult(String requestId) throws Exception {
+    var client = HttpClient.newHttpClient();
+    var uri = URI.create(".../result?requestId=" + requestId);
+    
+    while (true) {
+        var request = HttpRequest.newBuilder()
+            .uri(uri)
+            .header("x-api-key", "YOUR_API_KEY")
+            .GET()
+            .build();
+            
+        var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        // Parse JSON response (e.g., using Jackson or Gson)
+        if (response.body().contains("\"DONE\"")) {
+            System.out.println("Processing complete");
+            break;
+        }
+        Thread.sleep(3000);
+    }
+}</code></pre>
+          </div>
         </div>
 
         <div class="doc-block">
@@ -167,10 +281,53 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github.css'
 
 const activeSection = ref('upload')
 const sections = ['upload', 'result', 'history']
+
+const expandedBlocks = ref({
+  upload: true,
+  polling: true
+})
+
+const selectedLangs = ref({
+  upload: 'js',
+  polling: 'js'
+})
+
+const highlightAll = () => {
+  nextTick(() => {
+    const blocks = document.querySelectorAll('pre code')
+    blocks.forEach((block) => {
+      hljs.highlightElement(block)
+    })
+  })
+}
+
+// Watch for changes in expanded blocks or language selection to re-highlight
+watch([expandedBlocks, selectedLangs], () => {
+  highlightAll()
+}, { deep: true })
+
+const toggleBlock = (blockId) => {
+  expandedBlocks.value[blockId] = !expandedBlocks.value[blockId]
+  if (expandedBlocks.value[blockId]) {
+    highlightAll()
+  }
+}
+
+const copyCode = (id) => {
+  const el = document.getElementById(id)
+  if (el) {
+    const code = el.innerText
+    navigator.clipboard.writeText(code).then(() => {
+      alert('Code copied to clipboard!')
+    })
+  }
+}
 
 const scrollTo = (id) => {
   const element = document.getElementById(id)
@@ -206,6 +363,7 @@ onMounted(() => {
   if (sections.includes(hash)) {
     setTimeout(() => scrollTo(hash), 100)
   }
+  highlightAll()
 })
 
 onUnmounted(() => {
@@ -288,7 +446,7 @@ onUnmounted(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6rem;
+  gap: 4rem;
 }
 
 .doc-section {
@@ -351,17 +509,87 @@ td {
 pre {
   padding: 1.5rem;
   overflow-x: auto;
-  color: #a5d6ff;
+  color: #24292e; /* Darker color for light background */
+  background: #f8f9fa; /* Off-white gray background */
+  border-radius: 12px;
   font-family: 'Fira Code', monospace;
   line-height: 1.5;
   font-size: 0.9rem;
+  border: 1px solid var(--border-color);
 }
 
 code {
   color: var(--primary-color);
-  background: rgba(56, 189, 248, 0.1);
+  background: rgba(0, 0, 0, 0.05); /* Subtle gray instead of blue */
   padding: 2px 4px;
   border-radius: 4px;
+}
+
+.code-wrapper {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  margin-top: 1rem;
+}
+
+.code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.lang-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.copy-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.code-wrapper pre {
+  margin: 0;
+  border: none;
+  background: #f8f9fa; /* Consistent off-white gray */
+  border-radius: 0;
+}
+
+.code-wrapper pre code.hljs {
+  padding: 1.5rem;
+  background: transparent;
+}
+
+/* Dark mode overrides for code blocks if needed */
+:root[data-theme="dark"] .code-wrapper pre,
+:root[data-theme="dark"] pre.glass,
+:root[data-theme="dark"] .hljs {
+  background: rgba(0, 0, 0, 0.3) !important;
+  color: #a5d6ff !important;
+}
+
+/* Highlight.js specific adjustments */
+.hljs {
+  background: transparent !important;
 }
 
 @media (max-width: 1024px) {
@@ -390,5 +618,91 @@ code {
   .sidebar-title {
     display: none;
   }
+}
+
+/* Security Notice */
+.security-notice {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem 2rem;
+  border-left: 4px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
+  align-items: center;
+}
+
+.notice-icon {
+  font-size: 2rem;
+}
+
+.notice-text p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+.notice-text p strong {
+  color: #f59e0b;
+}
+
+/* Collapsible Code */
+.code-wrapper {
+  transition: all 0.3s ease;
+}
+
+.code-wrapper.collapsed pre {
+  display: none;
+}
+
+.code-header {
+  cursor: pointer;
+}
+
+.code-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.toggle-icon {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  width: 20px;
+  text-align: center;
+}
+
+.lang-tag small {
+  font-weight: 400;
+  opacity: 0.7;
+  margin-left: 0.5rem;
+  text-transform: none;
+}
+
+.lang-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.lang-tabs button {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.lang-tabs button:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.lang-tabs button.active {
+  color: var(--primary-color);
+  background: rgba(56, 189, 248, 0.1);
 }
 </style>
