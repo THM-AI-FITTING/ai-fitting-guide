@@ -28,13 +28,21 @@ const close = () => {
   emit('close');
 };
 
-// Prevent scrolling when modal is open
+const handleKeydown = (e) => {
+  if (e.key === 'Escape') {
+    close();
+  }
+};
+
+// Prevent scrolling when modal is open and handle ESC key
 watch(() => props.show, (newVal) => {
   if (import.meta.client) {
     if (newVal) {
       document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', handleKeydown);
     } else {
       document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeydown);
     }
   }
 });
@@ -42,6 +50,7 @@ watch(() => props.show, (newVal) => {
 onUnmounted(() => {
   if (import.meta.client) {
     document.body.style.overflow = '';
+    window.removeEventListener('keydown', handleKeydown);
   }
 });
 </script>
