@@ -739,6 +739,12 @@ const pollResult = async () => {
   text-align: center;
 }
 
+.loader-container p {
+  word-break: keep-all;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
 .loader {
   width: 40px;
   height: 40px;
