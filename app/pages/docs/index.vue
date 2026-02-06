@@ -171,7 +171,7 @@ System.out.println(response.body());</code></pre>
 
             <pre v-if="selectedLangs.polling === 'js'" id="polling-code-js"><code class="language-javascript">const pollResult = async (requestId) => {
   const checkStatus = async () => {
-    const res = await fetch(`.../result?requestId=${requestId}`, {
+    const res = await fetch(`https://api.yourservice.com/result?requestId=${requestId}`, {
       headers: { 'x-api-key': 'YOUR_API_KEY' }
     });
     const data = await res.json();
@@ -188,7 +188,7 @@ System.out.println(response.body());</code></pre>
             <pre v-if="selectedLangs.polling === 'java'" id="polling-code-java"><code class="language-java">// Using Java 11+ HttpClient
 public void pollResult(String requestId) throws Exception {
     var client = HttpClient.newHttpClient();
-    var uri = URI.create(".../result?requestId=" + requestId);
+    var uri = URI.create("https://api.yourservice.com/result?requestId=" + requestId);
     
     while (true) {
         var request = HttpRequest.newBuilder()
@@ -243,6 +243,10 @@ public void pollResult(String requestId) throws Exception {
         <div class="doc-block glass">
           <h3>설명</h3>
           <p>피팅 작업의 페이지네이션된 목록을 가져옵니다. <code>userId</code> 필터링을 지원하여 특정 사용자의 이력만 표시하거나, 필터가 없는 경우 해당 파트너의 모든 작업을 표시합니다.</p>
+          <div class="info-alert glass">
+            <span class="info-icon">💡</span>
+            <p><strong>토큰 기반 페이징:</strong> 본 API는 DynamoDB의 성능 최적화를 위해 오프셋 방식이 아닌 <strong>토큰 기반 페이징</strong>을 사용합니다. 응답의 <code>nextId</code>와 <code>nextSort</code>를 다음 요청의 <code>lastId</code>와 <code>lastSort</code> 파라미터로 전달하여 다음 페이지를 조회할 수 있습니다.</p>
+          </div>
         </div>
 
         <div class="doc-block">
@@ -253,27 +257,107 @@ public void pollResult(String requestId) throws Exception {
             </thead>
             <tbody>
               <tr><td>userId</td><td>String</td><td>아니오</td><td>특정 사용자의 작업을 필터링합니다.</td></tr>
+              <tr><td>size</td><td>Number</td><td>아니오</td><td>한 페이지에 가져올 항목 수 (기본값: 10).</td></tr>
+              <tr><td>sort</td><td>String</td><td>아니오</td><td>정렬 순서 (<code>desc</code> 또는 <code>asc</code>, 기본값: <code>desc</code>).</td></tr>
+              <tr><td>lastId</td><td>String</td><td>아니오</td><td>이전 응답의 <code>nextId</code> 값을 전달합니다.</td></tr>
+              <tr><td>lastSort</td><td>String</td><td>아니오</td><td>이전 응답의 <code>nextSort</code> 값을 전달합니다.</td></tr>
             </tbody>
           </table>
         </div>
 
         <div class="doc-block">
-          <h3>응답 예시</h3>
-          <pre class="glass"><code>[
-  {
-    "requestId": "req_1",
-    "userId": "user_123",
-    "status": "DONE",
-    "resultUrl": "...",
-    "createdAt": "2026-02-01T07:15:20Z"
-  },
-  {
-    "requestId": "req_2",
-    "userId": "user_123",
-    "status": "PROCESSING",
-    "createdAt": "2026-02-01T07:20:00Z"
+          <h3>응답 구조</h3>
+          <table class="glass">
+            <thead>
+              <tr><th>필드</th><th>타입</th><th>설명</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>items</td><td>Array</td><td>작업 이력 목록.</td></tr>
+              <tr><td>nextId</td><td>String</td><td>다음 페이지 조회를 위한 ID 토큰 (마지막 페이지인 경우 null).</td></tr>
+              <tr><td>nextSort</td><td>String</td><td>다음 페이지 조회를 위한 정렬 토큰 (마지막 페이지인 경우 null).</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="doc-block">
+          <h3>페이징 요청 예시</h3>
+          <div class="code-wrapper glass" :class="{ 'collapsed': !expandedBlocks.history }">
+            <div class="code-header" @click="toggleBlock('history')">
+              <div class="lang-tabs" @click.stop>
+                <button :class="{ active: selectedLangs.history === 'js' }" @click="selectedLangs.history = 'js'">JavaScript</button>
+                <button :class="{ active: selectedLangs.history === 'java' }" @click="selectedLangs.history = 'java'">Java</button>
+              </div>
+              <div class="code-actions">
+                <button class="copy-btn" @click.stop="copyCode(selectedLangs.history === 'js' ? 'history-code-js' : 'history-code-java')">Copy</button>
+                <div class="toggle-icon">{{ expandedBlocks.history ? '▲' : '▼' }}</div>
+              </div>
+            </div>
+
+            <pre v-if="selectedLangs.history === 'js'" id="history-code-js"><code class="language-javascript">// 다음 페이지 조회를 위한 함수 예시
+const fetchNextPage = async (userId, lastId = null, lastSort = null) => {
+  let url = `https://api.yourservice.com/fitting/history?userId=${userId}&size=10`;
+  
+  if (lastId && lastSort) {
+    url += `&lastId=${lastId}&lastSort=${lastSort}`;
   }
-]</code></pre>
+
+  const response = await fetch(url, {
+    headers: { 'x-api-key': 'YOUR_API_KEY' }
+  });
+  
+  const data = await response.json();
+  console.log('Items:', data.items);
+  
+  if (data.nextId) {
+    console.log('Next page available');
+    // data.nextId, data.nextSort를 사용하여 다음 호출 가능
+  }
+};</code></pre>
+
+            <pre v-if="selectedLangs.history === 'java'" id="history-code-java"><code class="language-java">// Using Java 11+ HttpClient
+public void fetchHistory(String userId, String lastId, String lastSort) throws Exception {
+    var client = HttpClient.newHttpClient();
+    String url = "https://api.yourservice.com/fitting/history?userId=" + userId + "&size=10";
+    
+    if (lastId != null && lastSort != null) {
+        url += "&lastId=" + lastId + "&lastSort=" + lastSort;
+    }
+
+    var request = HttpRequest.newBuilder()
+        .uri(URI.create(url))
+        .header("x-api-key", "YOUR_API_KEY")
+        .GET()
+        .build();
+        
+    var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+    // Parse response.body() to get nextId and nextSort for subsequent calls
+    System.out.println(response.body());
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="doc-block">
+          <h3>응답 예시</h3>
+          <pre class="glass"><code>{
+  "items": [
+    {
+      "requestId": "req_20260201_002",
+      "userId": "user_123",
+      "status": "DONE",
+      "resultUrl": "https://s3.amazonaws.com/...",
+      "createdAt": "2026-02-01T07:20:00Z"
+    },
+    {
+      "requestId": "req_20260201_001",
+      "userId": "user_123",
+      "status": "DONE",
+      "resultUrl": "https://s3.amazonaws.com/...",
+      "createdAt": "2026-02-01T07:15:20Z"
+    }
+  ],
+  "nextId": "req_20260201_001",
+  "nextSort": "2026-02-01T07:15:20Z"
+}</code></pre>
         </div>
       </section>
     </div>
@@ -297,12 +381,14 @@ const sections = ['upload', 'result', 'history']
 
 const expandedBlocks = ref({
   upload: true,
-  polling: true
+  polling: true,
+  history: true
 })
 
 const selectedLangs = ref({
   upload: 'js',
-  polling: 'js'
+  polling: 'js',
+  history: 'js'
 })
 
 const showToast = ref(false)
@@ -723,29 +809,58 @@ code {
 
 .lang-tabs {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.8rem;
 }
 
 .lang-tabs button {
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: var(--text-muted);
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  padding: 0.3rem 0.8rem;
-  border-radius: 6px;
+  padding: 0.5rem 1.2rem;
+  border-radius: 8px;
   cursor: pointer;
   text-transform: uppercase;
   transition: all 0.2s;
+  min-width: 100px;
 }
 
 .lang-tabs button:hover {
   color: var(--text-main);
   background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .lang-tabs button.active {
   color: var(--primary-color);
   background: rgba(56, 189, 248, 0.1);
+  border-color: var(--primary-color);
+}
+
+.info-alert {
+  display: flex;
+  gap: 1.2rem;
+  padding: 1.5rem;
+  background: rgba(56, 189, 248, 0.05);
+  border-left: 4px solid var(--primary-color);
+  margin-top: 1.5rem;
+  align-items: flex-start;
+}
+
+.info-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.info-alert p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+.info-alert strong {
+  color: var(--primary-color);
 }
 </style>
