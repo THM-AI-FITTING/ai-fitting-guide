@@ -559,6 +559,7 @@ const pollResult = async () => {
   border-radius: 8px;
   outline: none;
   transition: var(--transition);
+  font-size: 16px;
 }
 
 .input-group input.error {
@@ -783,7 +784,7 @@ const pollResult = async () => {
   color: var(--text-main);
   padding: 0.6rem;
   border-radius: 8px;
-  font-size: 0.8rem;
+  font-size: 16px;
   outline: none;
   transition: var(--transition);
 }
