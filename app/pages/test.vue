@@ -1213,7 +1213,7 @@ const pollResult = async () => {
 
   .upload-grid {
     display: flex;
-    overflow-x: auto;
+    overflow-x: scroll;
     scroll-snap-type: x mandatory;
     gap: 1rem;
     padding-bottom: 0.5rem;
@@ -1230,6 +1230,8 @@ const pollResult = async () => {
   /* Custom Scrollbar Styles */
   .upload-grid::-webkit-scrollbar {
     height: 6px;
+    /* Slightly taller for better touch target/visibility on mobile */
+    -webkit-appearance: none;
   }
 
   .upload-grid::-webkit-scrollbar-track {
