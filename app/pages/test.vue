@@ -6,7 +6,15 @@
       <p>본인의 이미지를 업로드하여 AI 피팅 엔진을 테스트해보세요.</p>
     </div>
 
-    <div class="config-panel glass">
+    <!-- TABS -->
+    <div class="test-tabs">
+      <button :class="{ active: activeTab === 'personal' }" @click="activeTab = 'personal'">나한테 피팅해보기</button>
+      <button :class="{ active: activeTab === 'studio' }" @click="activeTab = 'studio'">스튜디오용 피팅</button>
+    </div>
+
+    <!-- PERSONAL FITTING TAB -->
+    <div v-show="activeTab === 'personal'" class="tab-content">
+      <div class="config-panel glass">
       <div class="input-group">
         <label>
           API Key
@@ -240,10 +248,19 @@
         </div>
       </div>
     </div>
+    </div>
+
+    <!-- STUDIO FITTING TAB -->
+    <div v-show="activeTab === 'studio'" class="tab-content">
+      <StudioFittingUI />
+    </div>
   </div>
 </template>
 
 <script setup>
+import StudioFittingUI from '~/components/StudioFittingUI.vue';
+
+const activeTab = ref('personal');
 const baseUrl = ref('https://wvoq4gq3ui.execute-api.ap-northeast-2.amazonaws.com/dev/fitting');
 const apiKey = ref('');
 const personFile = ref(null);
@@ -506,10 +523,41 @@ const pollResult = async () => {
 </script>
 
 <style scoped>
+.test-tabs {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.test-tabs button {
+  padding: 0.8rem 2rem;
+  border-radius: 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.test-tabs button.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.tab-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .test-container {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
   padding-bottom: 4rem;
 }
 
