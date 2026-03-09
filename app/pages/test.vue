@@ -527,7 +527,8 @@ const pollResult = async () => {
   display: flex;
   gap: 1rem;
   justify-content: center;
-  margin-bottom: 2rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
 
 .test-tabs button {

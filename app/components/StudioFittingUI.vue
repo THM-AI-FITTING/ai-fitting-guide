@@ -1,769 +1,1085 @@
 <template>
-  <div class="studio-fitting-container">
-    <div class="upload-grid">
-      <!-- Image Upload Section -->
-      <div class="upload-card glass">
-        <div class="card-header">
-          <h3>의상 사진 업로드</h3>
-          <p class="card-subtitle">전면 사진은 필수이며, 후면 사진 업로드 시 추가 포즈가 활성화됩니다.</p>
-        </div>
-
-        <div class="upload-areas">
-          <!-- Front Photo -->
-          <div class="upload-item">
-            <label class="upload-label">전면 의상 사진 (필수)</label>
-            <div 
-              class="drop-zone" 
-              :class="{ 'has-image': frontImage }"
-              @click="$refs.frontInput.click()"
-            >
-              <input 
-                type="file" 
-                ref="frontInput" 
-                hidden 
-                accept="image/*" 
-                @change="handleFileUpload($event, 'front')"
-              >
-              <template v-if="frontImage">
-                <img :src="frontImage" class="preview-img" alt="Front Preview">
-                <button class="remove-btn" @click.stop="frontImage = null">×</button>
-              </template>
-              <div v-else class="upload-placeholder">
-                <div class="icon">📁</div>
-                <span>클릭하여 사진 선택</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Back Photo -->
-          <div class="upload-item">
-            <label class="upload-label">후면 의상 사진 (선택)</label>
-            <div 
-              class="drop-zone" 
-              :class="{ 'has-image': backImage }"
-              @click="$refs.backInput.click()"
-            >
-              <input 
-                type="file" 
-                ref="backInput" 
-                hidden 
-                accept="image/*" 
-                @change="handleFileUpload($event, 'back')"
-              >
-              <template v-if="backImage">
-                <img :src="backImage" class="preview-img" alt="Back Preview">
-                <button class="remove-btn" @click.stop="backImage = null">×</button>
-              </template>
-              <div v-else class="upload-placeholder">
-                <div class="icon">📁</div>
-                <span>클릭하여 사진 선택</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="upload-footer">
-          <button 
-            class="btn-primary" 
-            :disabled="!frontImage || generating"
-            @click="generatePoses"
-          >
-            {{ generating ? '처리 중...' : (frontImage && backImage ? '4개 포즈 생성하기' : '2개 포즈 생성하기') }}
-          </button>
+  <div class="studio-redesign-container">
+    <!-- Top API Key Section -->
+    <div class="config-panel-v2 glass">
+      <div class="input-group-v2">
+        <label class="group-title">
+          API Key
+          <span class="required">* 필수 입력 값입니다.</span>
+        </label>
+        <div class="api-key-input-wrapper-v2" :class="{ 'error': showApiKeyError }">
+          <Key class="input-icon" :size="16" />
+          <input 
+            ref="apiKeyInput"
+            v-model="apiKey" 
+            type="password" 
+            class="modern-input-v3" 
+            placeholder="인증을 위한 API Key를 입력하세요"
+            @input="showApiKeyError = false"
+          />
         </div>
       </div>
+    </div>
 
-      <!-- Pose Guide Section -->
-      <div class="guide-card glass">
-        <div class="card-header">
-          <h3>포즈 선택 영역</h3>
-          <span class="badge" :class="backImage ? 'badge-success' : 'badge-warning'">
-            {{ backImage ? '모든 포즈 가능' : '전면 포즈만 가능' }}
-          </span>
-        </div>
-        <p class="card-subtitle" style="margin-bottom: 1rem;">
-          각 포즈에 원하는 모델이나 포즈 예시를 선택/업로드하세요.
-        </p>
-
-        <div class="guide-grid">
-          <div 
-            v-for="pose in poses" 
-            :key="pose.id" 
-            class="pose-item"
-            :class="{ disabled: (pose.type === 'back' && !backImage) || (pose.type === 'front' && !frontImage) }"
-          >
-            <div class="pose-thumb" @click="handlePoseClick(pose)">
-              <div class="pose-overlay" v-if="pose.type === 'front' && !frontImage">
-                <div class="icon">🔒</div>
-                <span>전면 사진 필요</span>
-              </div>
-              <div class="pose-overlay" v-else-if="pose.type === 'back' && !backImage">
-                <div class="icon">🔒</div>
-                <span>후면 사진 필요</span>
-              </div>
-              <template v-else>
-                <img v-if="pose.customImage" :src="pose.customImage" class="preview-img" />
-                <div v-else class="silhouette-placeholder">
-                  <div class="icon">👤</div>
-                  <span>포즈 설정</span>
+    <div class="studio-body-layout">
+      <!-- Left Sidebar: Controls -->
+      <aside class="studio-sidebar-v2">
+        <div class="sidebar-content-v2">
+          <!-- Clothing Upload Row (Top & Bottom) -->
+        <section class="control-group">
+          <div class="group-header">
+            <label class="group-title">의류 업로드</label>
+          </div>
+          
+          <div class="upload-slots-row">
+            <!-- Top Upload -->
+            <div class="upload-area-v2" @click="topImage ? null : topInput?.click()">
+              <input type="file" ref="topInput" hidden accept="image/*" @change="handleFileUpload($event, 'top')">
+              <template v-if="topImage">
+                <div class="image-preview-v2">
+                  <img :src="topImage" class="preview-img" />
+                  <button class="remove-btn-v2" @click.stop="removeImage('top')"><X :size="14" /></button>
                 </div>
               </template>
-              <div class="pose-label">{{ pose.id }}</div>
+              <div v-else class="upload-placeholder-v2">
+                <div class="placeholder-icon"><Upload :size="20" /></div>
+                <span>전면 사진 업로드</span>
+              </div>
             </div>
-            <div class="pose-info">
-              <span class="pose-name">{{ pose.name }}</span>
-              <span class="pose-desc">{{ pose.desc }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Result / Prompt Section -->
-    <div v-if="showResults" class="results-section">
-      <div class="result-card glass">
-        <div class="section-header">
-          <h3>생성 결과</h3>
-        </div>
-
-        <div class="results-grid">
-          <div v-for="res in results" :key="res.id" class="result-img-wrapper">
-            <img :src="res.url" :alt="res.id" class="preview-img" />
-            <div class="result-tag">{{ res.id }}</div>
-          </div>
-        </div>
-        
-        <div class="prompt-section">
-          <h3>수정 프롬프트 입력</h3>
-          <p class="subtitle">결과물이 마음에 들지 않으신가요? 원하는 수정 사항을 입력해보세요.</p>
-          <div class="input-with-btn">
-            <input type="text" v-model="editPrompt" placeholder="예: 바지 기장을 조금 더 길게 해주세요" class="prompt-input" />
-            <button class="btn-secondary" @click="submitPrompt">수정 요청</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Hidden file input for custom pose -->
-    <input type="file" ref="poseInput" hidden accept="image/*" @change="handlePoseUpload" />
-
-    <!-- Pose Selection Modal -->
-    <div v-if="showPoseModal" class="modal-backdrop" @click.self="closePoseModal">
-      <div class="modal-content glass">
-        <div class="modal-header">
-          <h3>{{ activePoseForUpload?.name }} 설정</h3>
-          <button class="close-btn" @click="closePoseModal">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="pose-options-section">
-            <h4>추천 모델/포즈 선택</h4>
-            <div class="example-poses-grid">
-              <div 
-                v-for="(img, idx) in examplePoses" 
-                :key="idx"
-                class="example-pose-item"
-                @click="selectExamplePose(img)"
-              >
-                <img :src="img" />
+            <!-- Bottom Upload -->
+            <div class="upload-area-v2" @click="bottomImage ? null : bottomInput?.click()">
+              <input type="file" ref="bottomInput" hidden accept="image/*" @change="handleFileUpload($event, 'bottom')">
+              <template v-if="bottomImage">
+                <div class="image-preview-v2">
+                  <img :src="bottomImage" class="preview-img" />
+                  <button class="remove-btn-v2" @click.stop="removeImage('bottom')"><X :size="14" /></button>
+                </div>
+              </template>
+              <div v-else class="upload-placeholder-v2">
+                <div class="placeholder-icon"><Upload :size="20" /></div>
+                <span>후면 사진 업로드</span>
               </div>
             </div>
           </div>
-          
-          <div class="divider"><span>OR</span></div>
-          
-          <div class="pose-upload-section">
-            <h4>직접 사진 업로드</h4>
-            <button class="btn-secondary" style="width: 100%;" @click="$refs.poseInput.click()">
-              내 디바이스에서 사진 찾기
+        </section>
+
+        <!-- Model Pose Selection -->
+        <section class="control-group">
+          <div class="group-header custom-header-row">
+            <label class="group-title">모델 포즈 선택</label>
+            <div class="modern-select-wrapper">
+              <select v-model="selectedProductType" class="modern-select-v2">
+                <option v-for="opt in productTypeOptions" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+              <ChevronDown class="select-icon-v2" :size="14" />
+            </div>
+          </div>
+
+          <div class="pose-tabs-v2">
+            <button v-for="t in genderTabs" :key="t.id"
+                    class="pose-tab" :class="{ active: currentGender === t.id }"
+                    @click="currentGender = t.id">
+              {{ t.name }}
             </button>
+          </div>
+
+          <div class="pose-grid-v2">
+            <div 
+              v-for="p in filteredPoses" 
+              :key="p.id" 
+              class="pose-card-v2"
+              :class="{ 
+                'active': selectedPoseIds.includes(p.id),
+                'disabled-card': !isPoseClickable(p.type)
+              }"
+              @click="isPoseClickable(p.type) ? togglePoseSelection(p.id) : null"
+            >
+              <div class="pose-thumb-v2">
+                <img :src="getSampleImageUrl(p.id)" :alt="p.name" />
+                <div v-if="p.status === 'processing' || p.status === 'pending'" class="pose-loading-overlay">
+                  <div class="mini-spinner"></div>
+                </div>
+                <div v-if="p.status === 'done'" class="pose-done-check">
+                  <Check :size="16" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Prompt Input -->
+        <section class="control-group prompt-group">
+          <div class="group-header">
+            <label class="group-title">생성 옵션 (프롬프트)</label>
+          </div>
+          <textarea 
+            v-model="promptText" 
+            class="modern-textarea" 
+            placeholder="예: 실크 소재의 느낌을 살려줘, 배경을 더 밝게 해줘 등"
+          ></textarea>
+        </section>
+      </div>
+
+      <div class="sidebar-footer-v2">
+        <button 
+          class="generate-action-btn"
+          :disabled="(!topImage && !bottomImage) || selectedPoseIds.length === 0 || allGenerating"
+          @click="generateAllPoses"
+        >
+          <span>지금 생성</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Right Main Content -->
+    <main class="studio-main-v2" ref="mainContent">
+      <div class="main-layout-v2">
+        <!-- Result Preview (Top) -->
+        <div class="preview-stage-v2">
+          <div class="preview-card-v2 shadow-premium" :class="{ 'generating-vibe': allGenerating }">
+            <!-- Inline Pose View Selector (Inside the card) -->
+            <div class="pose-view-selector-v2">
+              <button 
+                v-for="p in filteredPoses" 
+                :key="p.id"
+                class="view-tab"
+                :class="{ active: viewingPoseId === p.id }"
+                :disabled="!hasHistoryOrIsDone(p.id)"
+                @click="viewingPoseId = p.id"
+              >
+                {{ p.id }}
+              </button>
+            </div>
+
+            <div v-if="displayImageUrl" class="result-image-wrapper">
+              <div class="img-inner-wrap">
+                <img v-if="viewingHistoryUrl || displayImageUrl" :src="viewingHistoryUrl || displayImageUrl || undefined" class="result-img animate-scale-up" />
+                <!-- Hover Zoom Button -->
+                <button class="hover-zoom-btn" @click="isImageViewerOpen = true">
+                  <Search :size="18" />
+                </button>
+              </div>
+            </div>
+            <div v-else-if="allGenerating" class="processing-vibe">
+              <div class="radiant-loader"></div>
+              <p>AI가 당신의 스타일을 디자인하고 있습니다...</p>
+            </div>
+            <div v-else class="empty-preview-v2">
+              <div class="empty-overlay">
+                <p class="empty-hint">비어 있음</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generated Results Gallery (Bottom) -->
+        <div class="results-gallery-v2 shadow-premium">
+          <div class="gallery-scroller-v2">
+            <div v-for="(item, idx) in historyList" :key="idx" 
+                 class="gallery-item-v2" 
+                 :class="{ active: item.current }" 
+                 @click="viewingHistoryUrl = item.url">
+              <img :src="item.url" />
+              <div v-if="item.current" class="latest-dot"></div>
+            </div>
+            <div v-if="historyList.length === 0" class="empty-gallery-msg">
+              생성된 결과가 여기에 표시됩니다
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
+  </div>
+
+    <!-- Image Viewer Modal -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="isImageViewerOpen" class="image-viewer-overlay" @click="isImageViewerOpen = false">
+          <div class="image-viewer-content" @click.stop>
+            <button class="viewer-close-btn" @click="isImageViewerOpen = false"><X :size="24" /></button>
+            <img v-if="viewingHistoryUrl || displayImageUrl" :src="viewingHistoryUrl || displayImageUrl || undefined" class="viewer-img" />
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Alerts -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="alertModal.show" class="alert-overlay-modern" @click="alertModal.show = false">
+          <div class="alert-content-modern" @click.stop>
+            <div class="alert-icon-box" :class="alertModal.type">
+              <AlertCircle v-if="alertModal.type === 'error'" :size="32" />
+              <Check v-else :size="32" />
+            </div>
+            <h3>{{ alertModal.title }}</h3>
+            <p>{{ alertModal.message }}</p>
+            <button class="alert-close-btn" @click="alertModal.show = false">확인</button>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Toast Notification -->
+    <Teleport to="body">
+      <Transition name="toast">
+        <div v-if="toastVisible" class="modern-toast">
+          <div class="toast-icon">
+            <Check :size="16" />
+          </div>
+          <span class="toast-text">{{ toastMsg }}</span>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue';
+<script setup lang="ts">
+import { ref, computed, reactive, onUnmounted, watch } from 'vue';
+import { 
+  Upload, X, ChevronDown, Check, AlertCircle, Search, Key
+} from 'lucide-vue-next';
+import { useRuntimeConfig, useCookie } from '#app';
 
-const frontImage = ref(null);
-const backImage = ref(null);
-const generating = ref(false);
-const showResults = ref(false);
+// --- State ---
+const currentGender = ref('female');
+const promptText = ref('');
+const poseGroupId = ref(crypto.randomUUID());
 
-const poseInput = ref(null);
-const activePoseForUpload = ref(null);
-const showPoseModal = ref(false);
+const topImage = ref<string | null>(null);
+const bottomImage = ref<string | null>(null);
+const selectedFiles = reactive<{ top: File | null, bottom: File | null }>({ top: null, bottom: null });
 
-const editPrompt = ref('');
+const selectedPoseIds = ref<string[]>([]);
+const viewingPoseId = ref('A');
+const viewingHistoryUrl = ref<string | null>(null);
+const isImageViewerOpen = ref(false);
+const mainContent = ref<HTMLElement | null>(null);
+const apiKeyInput = ref<HTMLInputElement | null>(null);
+const apiKey = ref('');
+const showApiKeyError = ref(false);
 
-const poses = ref([
-  { id: 'Pose A', name: '정면 기본', desc: '모델이 정면을 응시하는 기본 포즈', type: 'front', customImage: null },
-  { id: 'Pose B', name: '정면 측면', desc: '몸을 약간 틀어 역동성을 준 포즈', type: 'front', customImage: null },
-  { id: 'Pose C', name: '후면 기본', desc: '뒷모습을 보여주는 기본 포즈', type: 'back', customImage: null },
-  { id: 'Pose D', name: '후면 디테일', desc: '등판 디테일을 강조한 포즈', type: 'back', customImage: null },
-]);
+const config = useRuntimeConfig();
+const apiBase = config.public.apiBase;
+const ownerCookie = useCookie('ai_guide_userId'); // Adapted for guide
+const currentUserId = computed(() => ownerCookie.value || 'dev-guide');
 
-const examplePoses = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
-  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400',
-  'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400',
+interface HistoryItem {
+  poseId: string;
+  gender: string;
+  url: string;
+  requestId: string;
+}
+const cumulativeHistory = ref<HistoryItem[]>([]);
+
+const genderTabs = [
+  { id: 'female', name: '여성' },
+  { id: 'male', name: '남성' },
+  { id: 'mannequin', name: '마네킹' }
 ];
 
-const handleFileUpload = (event, type) => {
-  const file = event.target.files?.[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (type === 'front') frontImage.value = e.target.result;
-      else backImage.value = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-  // Reset input
-  event.target.value = '';
+const productTypeOptions = [
+  { label: '전체의상', value: 'base' },
+  { label: '상의', value: 'top' },
+  { label: '하의', value: 'bottom' }
+];
+
+const selectedProductType = ref('base');
+
+// --- Toast Notification ---
+const toastVisible = ref(false);
+const toastMsg = ref('');
+let toastTimer: any = null;
+
+const showToast = (msg: string) => {
+  toastMsg.value = msg;
+  toastVisible.value = true;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toastVisible.value = false;
+  }, 3000);
 };
 
-const handlePoseClick = (pose) => {
-  if (pose.type === 'front' && !frontImage.value) {
-    alert('전면 의상 사진을 먼저 업로드해주세요.');
-    return;
-  }
-  if (pose.type === 'back' && !backImage.value) {
-    alert('후면 의상 사진을 먼저 업로드해주세요.');
-    return;
-  }
-  
-  activePoseForUpload.value = pose;
-  showPoseModal.value = true;
-};
-
-const closePoseModal = () => {
-  showPoseModal.value = false;
-  activePoseForUpload.value = null;
-};
-
-const selectExamplePose = (imgUrl) => {
-  if (activePoseForUpload.value) {
-    activePoseForUpload.value.customImage = imgUrl;
-  }
-  closePoseModal();
-};
-
-const handlePoseUpload = (event) => {
-  const file = event.target.files?.[0];
-  if (file && activePoseForUpload.value) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      activePoseForUpload.value.customImage = e.target.result;
-      closePoseModal();
-    };
-    reader.readAsDataURL(file);
-  }
-  event.target.value = '';
-};
-
-const generatePoses = () => {
-  if (!frontImage.value) return;
-  
-  generating.value = true;
-  // Mock generation delay
-  setTimeout(() => {
-    generating.value = false;
-    showResults.value = true;
-  }, 2000);
-};
-
-const submitPrompt = () => {
-  if (!editPrompt.value.trim()) return;
-  generating.value = true;
-  setTimeout(() => {
-    generating.value = false;
-    alert(`프롬프트 "${editPrompt.value}" 반영 완료 (Mock)`);
-    editPrompt.value = '';
-  }, 1000);
-};
-
-const results = computed(() => {
-  const list = [
-    { id: 'Pose A 결과', url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400' },
-    { id: 'Pose B 결과', url: 'https://images.unsplash.com/photo-1539109132304-391e55030f9a?w=400' },
-  ];
-  
-  if (backImage.value) {
-    list.push(
-      { id: 'Pose C 결과', url: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400' },
-      { id: 'Pose D 결과', url: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=400' }
-    );
-  }
-  
-  return list;
+const alertModal = reactive({
+  show: false,
+  type: 'info' as 'info' | 'error' | 'success',
+  title: '',
+  message: '',
 });
+
+const showAlert = (title: string, message: string, type: 'info' | 'error' | 'success' = 'info') => {
+  alertModal.title = title;
+  alertModal.message = message;
+  alertModal.type = type;
+  alertModal.show = true;
+};
+
+type JobStatus = 'idle' | 'pending' | 'processing' | 'done' | 'error' | 'failed';
+
+interface PoseState {
+  id: string;
+  name: string;
+  type: 'front' | 'back';
+  gender: string;
+  status: JobStatus;
+  resultUrl: string | null;
+  requestId: string | null;
+}
+
+// 4 Poses (A, B, C, D) for each gender
+const poseStates = reactive<PoseState[]>([
+  { id: 'A', name: '여성 A', type: 'front', gender: 'female', status: 'idle', resultUrl: null, requestId: null },
+  { id: 'B', name: '여성 B', type: 'front', gender: 'female', status: 'idle', resultUrl: null, requestId: null },
+  { id: 'C', name: '여성 C', type: 'back', gender: 'female', status: 'idle', resultUrl: null, requestId: null },
+  { id: 'D', name: '여성 D', type: 'back', gender: 'female', status: 'idle', resultUrl: null, requestId: null },
+  { id: 'A', name: '남성 A', type: 'front', gender: 'male', status: 'idle', resultUrl: null, requestId: null },
+  { id: 'B', name: '남성 B', type: 'front', gender: 'male', status: 'idle', resultUrl: null, requestId: null },
+  { id: 'C', name: '남성 C', type: 'back', gender: 'male', status: 'idle', resultUrl: null, requestId: null },
+  { id: 'D', name: '남성 D', type: 'back', gender: 'male', status: 'idle', resultUrl: null, requestId: null },
+  { id: 'A', name: '마네킹 A', type: 'front', gender: 'mannequin', status: 'idle', resultUrl: null, requestId: null },
+  { id: 'B', name: '마네킹 B', type: 'front', gender: 'mannequin', status: 'idle', resultUrl: null, requestId: null },
+  { id: 'C', name: '마네킹 C', type: 'back', gender: 'mannequin', status: 'idle', resultUrl: null, requestId: null },
+  { id: 'D', name: '마네킹 D', type: 'back', gender: 'mannequin', status: 'idle', resultUrl: null, requestId: null },
+]);
+
+const topInput = ref<HTMLInputElement | null>(null);
+const bottomInput = ref<HTMLInputElement | null>(null);
+
+// --- Computed ---
+const filteredPoses = computed(() => poseStates.filter(p => p.gender === currentGender.value));
+const selectedPose = computed(() => filteredPoses.value.find(p => p.id === viewingPoseId.value) || filteredPoses.value[0]);
+
+const historyList = computed(() => {
+  return cumulativeHistory.value
+    .filter(h => h.poseId === viewingPoseId.value && h.gender === currentGender.value)
+    .map(h => ({ 
+      url: h.url, 
+      current: viewingHistoryUrl.value 
+        ? h.url === viewingHistoryUrl.value 
+        : h.url === displayImageUrl.value 
+    }))
+    .reverse();
+});
+
+const displayImageUrl = computed(() => {
+  if (selectedPose.value?.status === 'done') return selectedPose.value.resultUrl;
+  return null;
+});
+
+const allGenerating = computed(() => poseStates.some(p => p.status === 'pending' || p.status === 'processing'));
+
+const isPoseClickable = (poseType: 'front' | 'back') => {
+  if (poseType === 'front') return !!topImage.value;
+  if (poseType === 'back') return !!bottomImage.value;
+  return false;
+};
+
+const hasHistoryOrIsDone = (poseId: string) => {
+  const pose = filteredPoses.value.find(p => p.id === poseId);
+  if (pose?.status === 'done' || pose?.resultUrl) return true;
+  return cumulativeHistory.value.some(h => h.poseId === poseId && h.gender === currentGender.value);
+};
+
+// --- Watchers ---
+watch(currentGender, () => {
+  const firstPose = filteredPoses.value[0];
+  if (!firstPose) return;
+  selectedPoseIds.value = [];
+  viewingPoseId.value = firstPose.id;
+  viewingHistoryUrl.value = null;
+});
+
+watch(viewingPoseId, () => {
+  viewingHistoryUrl.value = null;
+});
+
+// --- Actions ---
+const handleFileUpload = (event: Event, type: 'top' | 'bottom') => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (file) {
+    if (type === 'top') selectedFiles.top = file;
+    else selectedFiles.bottom = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (type === 'top') topImage.value = e.target?.result as string;
+      else bottomImage.value = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+const removeImage = (type: 'top' | 'bottom') => {
+  if (type === 'top') { topImage.value = null; selectedFiles.top = null; }
+  else { bottomImage.value = null; selectedFiles.bottom = null; }
+};
+
+const togglePoseSelection = (id: string) => {
+  const pose = filteredPoses.value.find(p => p.id === id);
+  if (!pose || !isPoseClickable(pose.type)) return;
+  
+  const idx = selectedPoseIds.value.indexOf(id);
+  if (idx > -1) {
+    selectedPoseIds.value.splice(idx, 1);
+  } else {
+    selectedPoseIds.value.push(id);
+  }
+};
+
+const getSampleImageUrl = (poseId: string) => {
+  const pose = filteredPoses.value.find(p => p.id === poseId);
+  const typeStr = pose?.type === 'front' ? 'front' : 'rear';
+  return `https://ai-fitting-studio-images.s3.ap-northeast-2.amazonaws.com/sample/${currentGender.value}-${selectedProductType.value}-${typeStr}_${poseId.toLowerCase()}.jpg`;
+};
+
+// --- API Logic ---
+let pollTimer: any = null;
+const startPolling = () => { if (!pollTimer) pollTimer = setInterval(fetchJobStatuses, 3000); };
+const stopPolling = () => { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } };
+
+const fetchJobStatuses = async () => {
+  const pendingPoses = poseStates.filter(p => p.requestId && (p.status === 'pending' || p.status === 'processing'));
+  if (pendingPoses.length === 0) return stopPolling();
+
+  let isFirstSuccessInCycle = false;
+
+  try {
+    const res = await fetch(`${apiBase}/api/studio/jobs/${poseGroupId.value}`, {
+      headers: { 'x-api-key': apiKey.value }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const jobs = data.jobs || [];
+      jobs.forEach((job: any) => {
+        const pose = poseStates.find(p => p.requestId === job.requestId);
+        if (pose) {
+          const s = job.status.toLowerCase();
+          if (s === 'success' || s === 'completed' || s === 'done') {
+            const wasNotDone = pose.status !== 'done';
+            pose.status = 'done';
+            
+             if (wasNotDone && !isFirstSuccessInCycle && job.resultUrl) {
+                isFirstSuccessInCycle = true;
+                showToast(`${pose.id} 포즈 이미지 생성이 완료되었습니다.`);
+                if (currentGender.value === pose.gender) {
+                  viewingPoseId.value = pose.id;
+                  viewingHistoryUrl.value = null;
+                }
+             }
+
+            if (job.resultUrl) {
+              pose.resultUrl = job.resultUrl;
+              const exists = cumulativeHistory.value.find(h => h.requestId === job.requestId);
+              if (!exists) {
+                cumulativeHistory.value.push({
+                  poseId: pose.id,
+                  gender: pose.gender,
+                  url: job.resultUrl,
+                  requestId: job.requestId
+                });
+              }
+            }
+          } else if (s === 'error' || s === 'blocked' || s === 'failed') {
+            pose.status = 'error';
+          } else {
+            pose.status = 'processing';
+          }
+        }
+      });
+      if (!allGenerating.value) stopPolling();
+    }
+  } catch (e) { console.error('Polling error:', e); }
+};
+
+const generateAllPoses = async () => {
+  if (!apiKey.value) {
+    showApiKeyError.value = true;
+    if (apiKeyInput.value) {
+      apiKeyInput.value.focus();
+      apiKeyInput.value.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return;
+  }
+
+  const activeFile = selectedFiles.top || selectedFiles.bottom;
+  if (selectedPoseIds.value.length === 0 || !activeFile) return;
+  
+  // Auto-scroll on mobile
+  if (window.innerWidth <= 768 && mainContent.value) {
+    const offset = 100; // Account for navbar height + 1rem padding
+    const top = mainContent.value.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top, behavior: 'smooth' });
+  }
+
+  poseGroupId.value = crypto.randomUUID();
+  for (const id of selectedPoseIds.value) {
+    const pose = filteredPoses.value.find(p => p.id === id);
+    if (!pose) continue;
+    pose.status = 'pending';
+    const formData = new FormData();
+    formData.append('poseGroupId', poseGroupId.value);
+    formData.append('slot', pose.id);
+    formData.append('gender', currentGender.value);
+    formData.append('productType', selectedProductType.value);
+    formData.append('product', activeFile);
+    formData.append('personImageKey', `sample/${currentGender.value}-${selectedProductType.value}-${pose.type === 'front' ? 'front' : 'rear'}_${pose.id.toLowerCase()}.jpg`);
+    formData.append('prompt', promptText.value);
+    formData.append('userId', currentUserId.value);
+    try {
+      const res = await fetch(`${apiBase}/api/studio/jobs`, { 
+        method: 'POST', 
+        body: formData,
+        headers: { 'x-api-key': apiKey.value }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        pose.requestId = data.requestId;
+        startPolling();
+      } else { pose.status = 'error'; }
+    } catch (e) { pose.status = 'error'; }
+  }
+};
+
+onUnmounted(() => stopPolling());
 </script>
 
 <style scoped>
-.studio-fitting-container {
+.studio-redesign-container {
   display: flex;
   flex-direction: column;
+  min-height: calc(100vh - 150px);
+  background: transparent;
+  color: #333;
+  overflow: hidden;
+  position: relative;
+  font-family: 'Pretendard', sans-serif;
+  padding-top: 0.5rem;
   gap: 1.5rem;
+}
+
+.config-panel-v2 {
+  padding: 1.2rem 1.5rem;
+  display: flex;
   width: 100%;
 }
 
-.upload-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+.input-group-v2 {
+  width: 100%;
 }
 
-@media (max-width: 992px) {
-  .upload-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.upload-card, .guide-card, .result-card {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.card-header {
+.input-group-v2 label {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-}
-
-.card-header h3 {
-  font-size: 1.25rem;
-  margin: 0;
-  color: var(--text-main);
-}
-
-.card-subtitle {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-top: 0.25rem;
-  line-height: 1.4;
-}
-
-.upload-areas {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.upload-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.upload-label {
-  font-size: 0.9rem;
+  align-items: center;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: var(--text-main);
-}
-
-.drop-zone {
-  aspect-ratio: 16/9;
-  border: 2px dashed var(--border-color);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: var(--transition);
-  background: transparent;
-}
-
-.drop-zone:hover:not(.has-image) {
-  border-color: var(--primary-color);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.drop-zone.has-image {
-  border-style: solid;
-  border-color: var(--border-color);
-}
-
-.upload-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
   color: var(--text-muted);
 }
 
-.upload-placeholder .icon {
-  font-size: 2rem;
+.required {
+  color: #ef4444;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
-.preview-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  background: var(--input-bg);
-}
-
-.remove-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(239, 68, 68, 0.9);
-  color: white;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: none;
-  font-size: 1.2rem;
+.api-key-input-wrapper-v2 {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0 12px;
   transition: all 0.2s;
 }
 
-.remove-btn:hover {
-  background: #ef4444;
-  transform: scale(1.1);
+.api-key-input-wrapper-v2.error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+  animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
 }
 
-.btn-primary {
-  width: 100%;
-  padding: 1rem;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  text-align: center;
-  background: var(--primary-color);
-  color: white;
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+.modern-input-v3 {
+  flex: 1;
+  background: transparent;
   border: none;
-  cursor: pointer;
-  transition: opacity 0.2s;
+  padding: 12px 0;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  outline: none;
 }
 
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.badge {
-  padding: 4px 10px;
-  border-radius: 99px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.badge-success {
-  background: rgba(74, 222, 128, 0.15);
-  color: #4ade80;
-}
-
-.badge-warning {
-  background: rgba(251, 146, 60, 0.15);
-  color: #fb923c;
-}
-
-.guide-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
-}
-
-.pose-item {
+.studio-body-layout {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.pose-item.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pose-thumb {
-  aspect-ratio: 3/4;
-  background: var(--input-bg);
-  border-radius: 12px;
-  position: relative;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
-  border: 1px solid var(--border-color);
-  cursor: pointer;
-  transition: var(--transition);
 }
 
-.pose-item:not(.disabled) .pose-thumb:hover {
-  border-color: var(--primary-color);
-}
-
-.silhouette-placeholder {
-  width: 100%;
-  height: 100%;
+.studio-sidebar-v2 {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(139, 92, 246, 0.01));
-  color: var(--text-muted);
-}
-
-.silhouette-placeholder .icon {
-  font-size: 3rem;
-  opacity: 0.5;
-}
-
-.pose-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  flex-shrink: 0;
+  width: 450px;
   z-index: 5;
+  background: var(--surface-color);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.sidebar-content-v2 {
+  flex: 1;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  gap: 0.5rem;
+  gap: 2rem;
+  padding: 2rem;
+}
+.sidebar-content-v2::-webkit-scrollbar { width: 4px; }
+.sidebar-content-v2::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 4px; }
+
+.control-group { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 0.75rem; 
+}
+.custom-header-row { display: flex; align-items: center; justify-content: space-between; }
+.group-title { font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
+
+.modern-select-wrapper { 
+  position: relative; 
+  display: flex; 
+  align-items: center; 
+}
+.modern-select-v2 { 
+  appearance: none;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 4px 28px 4px 10px;
   font-size: 0.8rem;
   font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+}
+.modern-select-v2:hover { border-color: var(--primary-color); }
+.select-icon-v2 { 
+  position: absolute; 
+  right: 8px; 
+  pointer-events: none; 
+  color: #888; 
 }
 
-.pose-label {
+.upload-slots-row { display: flex; gap: 0.75rem; }
+.upload-area-v2 {
+  flex: 1;
+  aspect-ratio: 1/1;
+  border: 1.5px dashed var(--border-color);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: var(--input-bg);
+  transition: all 0.2s;
+  overflow: hidden;
+}
+
+.upload-area-v2:hover { border-color: var(--primary-color); }
+.upload-placeholder-v2 { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #888; font-size: 0.75rem; font-weight: 600; }
+.image-preview-v2 { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.preview-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.remove-btn-v2 { position: absolute; top: 4px; right: 4px; background: #fff; border: 1px solid #eee; border-radius: 50%; padding: 3px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; color: #333; }
+
+.pose-tabs-v2 { display: flex; background: var(--input-bg); padding: 4px; border-radius: 10px; gap: 4px; border: 1px solid var(--border-color); }
+.pose-tab { flex: 1; padding: 6px; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); border-radius: 8px; transition: all 0.2s; background: transparent; border: none; cursor: pointer; }
+.pose-tab.active { background: var(--primary-color); color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+
+.pose-grid-v2 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+.pose-thumb-v2 { aspect-ratio: 1/1.4; background: #eee; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; border: 2px solid transparent; }
+.pose-card-v2.active .pose-thumb-v2 { border-color: var(--primary-color); }
+.disabled-card {
+  opacity: 0.3;
+  pointer-events: none;
+  filter: grayscale(0.8);
+}
+.pose-thumb-v2 img { width: 100%; height: 100%; object-fit: cover; }
+
+.pose-loading-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; }
+.pose-done-check { position: absolute; bottom: 4px; right: 4px; background: var(--primary-color); color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.mini-spinner { width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: var(--primary-color); border-radius: 50%; animation: spin 0.8s linear infinite; }
+
+.modern-textarea { width: 100%; height: 80px; border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; font-size: 0.85rem; resize: none; background: var(--input-bg); color: var(--text-main); outline: none; transition: border-color 0.2s; }
+.modern-textarea:focus { border-color: var(--primary-color); }
+
+.api-key-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0 12px;
+  transition: all 0.2s;
+}
+.api-key-input-wrapper:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+}
+.api-key-input-wrapper.error {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+}
+.input-icon {
+  color: #888;
+  margin-right: 10px;
+}
+.modern-input-v2 {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 12px 0;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  outline: none;
+}
+
+.sidebar-footer-v2 { 
+  padding: 1.5rem 2rem;
+  border-top: 1px solid var(--border-color);
+}
+.generate-action-btn { width: 100%; height: 52px; background: #ccc; color: #fff; border-radius: 12px; font-size: 1rem; font-weight: 800; display: flex; align-items: center; justify-content: center; border: none; transition: background 0.2s; }
+.generate-action-btn:not(:disabled) { background: var(--primary-color); cursor: pointer; }
+
+.studio-main-v2 { 
+  flex: 1; 
+  padding: 0 1.5rem; 
+  display: flex; 
+  flex-direction: column; 
+  overflow: hidden; 
+}
+.main-layout-v2 { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 1.5rem; 
+  width: 100%; 
+  max-width: 1200px; 
+  margin: 0 auto; 
+  height: 100%;
+}
+
+.preview-stage-v2 { 
+  flex: 1; 
+  min-height: 0; 
+  display: flex; 
+  flex-direction: column; 
+  padding-top: 0;
+}
+
+.preview-card-v2 { 
+  width: 100%; 
+  flex: 1; 
+  background: var(--bg-card); 
+  border-radius: 20px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  position: relative; 
+  z-index: 1; 
+  transition: all 0.5s ease;
+  min-height: 0;
+  border: 1px solid var(--border-color);
+}
+.shadow-premium { box-shadow: 0 15px 35px rgba(0,0,0,0.05); }
+
+.generating-vibe::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  background: linear-gradient(45deg, #ff4d4f, #5c7cfa, #00d2ff, #7e5bef, #ff4d4f);
+  background-size: 400% 400%;
+  z-index: -1;
+  border-radius: 23px;
+  animation: border-gradient-wave 3s ease infinite;
+  filter: blur(2px);
+}
+
+.generating-vibe::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: var(--surface-color);
+  z-index: -1;
+  border-radius: 19px;
+}
+
+@keyframes border-gradient-wave {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.result-image-wrapper { 
+  width: 100%; 
+  height: 100%; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  position: relative; 
+  padding: 1.5rem; 
+  box-sizing: border-box; 
+  overflow: hidden;
+  border-radius: 20px;
+}
+.img-inner-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.result-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+
+.hover-zoom-btn {
   position: absolute;
   top: 10px;
-  left: 10px;
-  background: var(--primary-color);
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  z-index: 10;
-}
-
-.pose-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.pose-name {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.pose-desc {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-.results-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  margin-top: 1rem;
-}
-
-.section-header {
-  margin-bottom: 1.5rem;
-}
-
-.section-header h3 {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.results-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.result-img-wrapper {
-  aspect-ratio: 3/4;
-  position: relative;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid var(--border-color);
-}
-
-.result-tag {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-  color: white;
-  padding: 20px 15px 10px;
-  font-weight: 700;
-}
-
-.prompt-section {
-  background: var(--input-bg);
-  padding: 1.5rem;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-}
-
-.prompt-section h3 {
-  margin-bottom: 0.5rem;
-  font-size: 1.1rem;
-}
-
-.prompt-section .subtitle {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
-}
-
-.input-with-btn {
-  display: flex;
-  gap: 1rem;
-}
-
-.prompt-input {
-  flex: 1;
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-main);
-  padding: 0.8rem 1rem;
-  border-radius: 8px;
-  outline: none;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-}
-
-.prompt-input:focus {
-  border-color: var(--primary-color);
-}
-
-.btn-secondary {
-  background: transparent;
-  color: var(--text-main);
-  padding: 0.8rem 1.5rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-  white-space: nowrap;
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--text-main);
-}
-
-.modal-backdrop {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(4px);
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #eee;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
-}
-
-.modal-content {
-  background: rgba(30, 30, 30, 0.9);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  width: 90%;
-  max-width: 400px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-:root[data-theme="light"] .modal-content {
-  background: rgba(255, 255, 255, 0.95);
-}
-
-.modal-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: var(--text-muted);
+  color: #333;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  z-index: 10;
 }
-
-.modal-body {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+.img-inner-wrap:hover .hover-zoom-btn {
+  opacity: 1;
+  transform: translateY(0);
 }
-
-.pose-options-section h4,
-.pose-upload-section h4 {
-  font-size: 0.95rem;
-  margin-bottom: 1rem;
-  color: var(--text-main);
-}
-
-.example-poses-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-}
-
-.example-pose-item {
-  aspect-ratio: 3/4;
-  border-radius: 8px;
-  overflow: hidden;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: border-color 0.2s;
-}
-
-.example-pose-item:hover {
+.hover-zoom-btn:hover {
+  background: var(--primary-color);
+  color: white;
   border-color: var(--primary-color);
+  transform: scale(1.05);
 }
+.empty-hint { color: var(--text-muted); font-size: 0.9rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
 
-.example-pose-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.pose-view-selector-v2 {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  padding: 6px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  gap: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  z-index: 20;
 }
-
-.divider {
+.view-tab {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
   display: flex;
   align-items: center;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  font-weight: 600;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.view-tab:hover:not(:disabled) { background: rgba(255,255,255,0.05); color: var(--text-main); }
+.view-tab.active { background: var(--primary-color); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+.view-tab:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.results-gallery-v2 { 
+  background: var(--bg-card); 
+  border-radius: 16px; 
+  padding: 1.25rem; 
+  border: 1px solid var(--border-color);
 }
 
-.divider::before, .divider::after {
-  content: '';
+.empty-gallery-msg {
   flex: 1;
-  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  background: var(--input-bg);
+  min-height: 120px;
+}
+.gallery-scroller-v2 { display: flex; gap: 1rem; align-items: center; overflow-x: auto; padding-bottom: 0.5rem; }
+.gallery-scroller-v2::-webkit-scrollbar { height: 6px; }
+.gallery-scroller-v2::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
+
+.gallery-item-v2 { flex-shrink: 0; width: 130px; aspect-ratio: 1/1.3; background: #f8f9fa; border-radius: 10px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative; transition: all 0.23s ease; }
+.gallery-item-v2.active { border-color: var(--primary-color); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(92, 124, 250, 0.15); }
+.gallery-item-v2 img { width: 100%; height: 100%; object-fit: cover; }
+.latest-dot { position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; background: var(--primary-color); border-radius: 50%; }
+
+.processing-vibe { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; color: var(--text-muted); }
+.radiant-loader { width: 40px; height: 40px; border: 3px solid #eee; border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s infinite linear; }
+
+.alert-overlay-modern { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+.alert-content-modern { background: var(--bg-card); width: 360px; padding: 2.5rem; border-radius: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1rem; border: 1px solid var(--border-color); }
+.alert-icon-box { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.alert-icon-box.info { background: rgba(92, 124, 250, 0.1); color: var(--primary-color); }
+.alert-icon-box.error { background: rgba(255, 77, 79, 0.1); color: #ff4d4f; }
+.alert-close-btn { width: 100%; height: 48px; background: var(--primary-color); color: #fff; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; margin-top: 0.5rem; }
+
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes scale-up { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.modern-toast {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: rgba(17, 17, 17, 0.85);
+  backdrop-filter: blur(12px);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.1);
+  min-width: 280px;
 }
 
-.divider span {
-  padding: 0 1rem;
+.toast-icon {
+  width: 28px;
+  height: 28px;
+  background: #10b981;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.toast-text {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.toast-enter-active, .toast-leave-active {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.toast-enter-from {
+  opacity: 0;
+  transform: translate(-50%, -20px) scale(0.9);
+}
+.toast-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -10px) scale(0.95);
+}
+
+.animate-scale-up { animation: scale-up 0.4s ease-out; }
+
+.image-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.image-viewer-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.viewer-img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.viewer-close-btn {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 8px;
+  transition: transform 0.2s;
+}
+.viewer-close-btn:hover {
+  transform: scale(1.1);
+}
+@media (max-width: 768px) {
+  .studio-redesign-container {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    padding-bottom: 2rem;
+  }
+  .studio-sidebar-v2 {
+    width: 100%;
+    height: auto;
+    flex-shrink: 0;
+    margin-bottom: 1.5rem;
+  }
+  .studio-main-v2 {
+    padding: 0;
+    overflow: visible;
+  }
+  .main-layout-v2 {
+    height: auto;
+    gap: 1.5rem;
+  }
+  .preview-stage-v2 {
+    flex: none;
+    height: 500px;
+  }
+  .preview-card-v2 {
+    flex: 1;
+  }
+  .viewer-close-btn {
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 50%;
+  }
 }
 </style>

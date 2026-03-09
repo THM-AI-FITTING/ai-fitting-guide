@@ -22,4 +22,9 @@ export default defineNuxtConfig({
   nitro: {
     preset: 'github-pages'
   },
+  runtimeConfig: {
+    public: {
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'https://ai-fitting-api-admin.duckdns.org'
+    }
+  }
 })
