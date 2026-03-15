@@ -6,7 +6,13 @@
           <span class="gradient-text">AI Fitting</span> 포털
         </NuxtLink>
         <div class="nav-links">
-          <NuxtLink to="/test" class="nav-item">체험하기</NuxtLink>
+          <div class="dropdown">
+            <NuxtLink to="/test" class="nav-item">체험하기</NuxtLink>
+            <div class="dropdown-content glass shadow-premium">
+              <NuxtLink to="/test/tryon" class="dropdown-item">나한테 피팅해보기</NuxtLink>
+              <NuxtLink to="/test/studio" class="dropdown-item">스튜디오용 피팅</NuxtLink>
+            </div>
+          </div>
           <NuxtLink to="/docs" class="nav-item">API 가이드</NuxtLink>
           <button class="theme-toggle" @click="toggleTheme" :title="theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'">
             {{ theme === 'dark' ? '☀️' : '🌙' }}
@@ -71,7 +77,7 @@ useHead({
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
-  max-width: 1200px;
+  max-width: 1400px;
   z-index: 1000;
   padding: 1rem 2rem;
   border-radius: 20px;
@@ -130,7 +136,7 @@ useHead({
   flex: 1;
   padding-top: 8rem;
   width: 90%;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -150,27 +156,35 @@ useHead({
   display: none;
   position: absolute;
   top: 100%;
-  right: 0;
-  min-width: 160px;
-  margin-top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 180px;
+  margin-top: 0.5rem;
   padding: 0.5rem;
-  overflow: hidden;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  z-index: 1001;
 }
 
 .dropdown:hover .dropdown-content {
   display: flex;
-  flex-direction: column;
 }
 
-.dropdown-content a {
+.dropdown-item {
   padding: 0.8rem 1rem;
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
   transition: var(--transition);
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-.dropdown-content a:hover {
-  background: rgba(255, 255, 255, 0.1);
+.dropdown-item:hover, .dropdown-item.router-link-active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
 }
 
 @media (max-width: 768px) {
