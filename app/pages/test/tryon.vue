@@ -482,6 +482,13 @@ const pollResult = async () => {
   color: var(--text-muted);
 }
 
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
 .config-panel {
   padding: 1.2rem 1.5rem;
   display: flex;

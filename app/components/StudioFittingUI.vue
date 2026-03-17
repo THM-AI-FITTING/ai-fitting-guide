@@ -551,7 +551,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onUnmounted, watch, nextTick } from 'vue';
+import { ref, computed, reactive, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { 
   Upload, X, Sparkles, Download, ChevronRight, ChevronLeft, ChevronDown, Check, AlertCircle, ImageIcon, Search, Wand2, Key
 } from 'lucide-vue-next';
@@ -563,6 +563,8 @@ const promptText = ref('');
 const selectedAspectRatio = ref('3:4');
 const selectedQuality = ref('1K');
 const selectedModel = ref('gemini-2.5-flash-image');
+const config = useRuntimeConfig();
+const apiBase = config.public.apiBase;
 const activePopover = ref<string | null>(null);
 const poseGroupId = ref(crypto.randomUUID());
 const apiKey = ref('');
@@ -618,9 +620,6 @@ const isQualityDisabled = computed(() => selectedModel.value !== 'gemini-3.1-fla
 
 const STUDIO_UPLOAD_URL = 'https://wvoq4gq3ui.execute-api.ap-northeast-2.amazonaws.com/dev/studio/upload';
 const STUDIO_RESULT_URL = 'https://wvoq4gq3ui.execute-api.ap-northeast-2.amazonaws.com/dev/studio/result';
-const ownerCookie = useCookie('ai_guide_userId');
-const currentUserId = computed(() => ownerCookie.value || 'dev-guide');
-
 const selectedPoseIds = ref<string[]>([]);
 const viewingPoseId = ref('A');
 const viewingHistoryUrl = ref<string | null>(null);
@@ -640,32 +639,78 @@ interface PoseState {
   productType: string;
 }
 
-const selectedProductType = ref('base');
-const productTypeOptions = [
-  { label: '전체 (Base)', value: 'base' },
-  { label: '상의 (Top)', value: 'top' },
-  { label: '하의 (Bottom)', value: 'bottom' },
-];
+const poseStates = reactive<PoseState[]>([]);
 
-const poseStates = reactive<PoseState[]>([
-  ...['base', 'top', 'bottom'].flatMap(pt => [
-    { id: 'A', name: `여성 A (${pt})`, type: 'front' as any, gender: 'female', status: 'idle' as JobStatus, resultUrl: null, requestId: null, customPersonUrl: null, retryCount: 0, productType: pt },
-    { id: 'B', name: `여성 B (${pt})`, type: 'front' as any, gender: 'female', status: 'idle' as JobStatus, resultUrl: null, requestId: null, customPersonUrl: null, retryCount: 0, productType: pt },
-    { id: 'C', name: `여성 C (${pt})`, type: 'back' as any, gender: 'female', status: 'idle' as JobStatus, resultUrl: null, requestId: null, customPersonUrl: null, retryCount: 0, productType: pt },
-    { id: 'D', name: `여성 D (${pt})`, type: 'back' as any, gender: 'female', status: 'idle' as JobStatus, resultUrl: null, requestId: null, customPersonUrl: null, retryCount: 0, productType: pt },
-  ]),
-  ...['base', 'top', 'bottom'].flatMap(pt => [
-    { id: 'A', name: `남성 A (${pt})`, type: 'front' as any, gender: 'male', status: 'idle' as JobStatus, resultUrl: null, requestId: null, customPersonUrl: null, retryCount: 0, productType: pt },
-    { id: 'B', name: `남성 B (${pt})`, type: 'front' as any, gender: 'male', status: 'idle' as JobStatus, resultUrl: null, requestId: null, customPersonUrl: null, retryCount: 0, productType: pt },
-    { id: 'C', name: `남성 C (${pt})`, type: 'back' as any, gender: 'male', status: 'idle' as JobStatus, resultUrl: null, requestId: null, customPersonUrl: null, retryCount: 0, productType: pt },
-    { id: 'D', name: `남성 D (${pt})`, type: 'back' as any, gender: 'male', status: 'idle' as JobStatus, resultUrl: null, requestId: null, customPersonUrl: null, retryCount: 0, productType: pt },
-  ]),
-  { id: 'E', name: '맞춤형', type: 'CUSTOM' as any, gender: 'custom', status: 'idle' as JobStatus, resultUrl: null, requestId: null, customPersonUrl: null, retryCount: 0, productType: 'base' },
-]);
+const fetchPoses = async () => {
+  try {
+    const res = await fetch(`${apiBase}/api/studio/samples`);
+    if (res.ok) {
+      const keys: string[] = await res.json();
+      const dynamicPoses: PoseState[] = [];
+      
+      keys.forEach(key => {
+        const filename = key.split('/').pop() || '';
+        const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+        const parts = nameWithoutExt.split('-');
+        
+        if (parts.length >= 3) {
+          const gender = parts[0]?.toLowerCase() || 'female';
+          const pt = parts[1] || 'base';
+          const suffix = parts[2] || '';
+          
+          const suffixParts = suffix.split('_');
+          const direction = suffixParts[0]?.toLowerCase() || 'front';
+          const poseId = suffixParts.length > 1 ? suffixParts[1]?.toUpperCase() || 'A' : 'A';
+          
+          const genderName = gender === 'female' ? '여성' : gender === 'male' ? '남성' : '마네킹';
+          
+          dynamicPoses.push({
+            id: poseId,
+            name: `${genderName} ${poseId} (${pt})`,
+            type: direction === 'front' ? 'front' : 'back',
+            gender: gender,
+            status: 'idle',
+            resultUrl: null,
+            requestId: null,
+            customPersonUrl: null,
+            retryCount: 0,
+            productType: pt
+          });
+        }
+      });
+
+      // Add Custom item
+      dynamicPoses.push({ 
+        id: 'E', name: '맞춤형', type: 'CUSTOM' as const, gender: 'custom', 
+        status: 'idle' as JobStatus, resultUrl: null, requestId: null, 
+        customPersonUrl: null, retryCount: 0, productType: 'base' 
+      });
+
+      // Update poseStates
+      poseStates.splice(0, poseStates.length, ...dynamicPoses);
+      
+      // Update viewingPoseId if current one is not in the new list
+      if (!dynamicPoses.some(p => p.id === viewingPoseId.value && p.gender === currentGender.value)) {
+          const firstAvailable = dynamicPoses.find(p => p.gender === currentGender.value);
+          if (firstAvailable) viewingPoseId.value = firstAvailable.id;
+      }
+    }
+  } catch (e) {
+    console.error('[Studio] Failed to fetch dynamic poses:', e);
+  }
+};
+
+onMounted(() => {
+  fetchPoses();
+});
 
 const uniquePoseTabs = computed(() => {
-  const ids = ['A', 'B', 'C', 'D', 'E'];
-  return ids.map(id => ({
+  const ids = Array.from(new Set(poseStates.map(p => p.id))).sort();
+  // Ensure 'E' is always at the end if it exists
+  const sortedIds = ids.filter(id => id !== 'E');
+  if (ids.includes('E')) sortedIds.push('E');
+  
+  return sortedIds.map(id => ({
     id,
     name: id === 'E' ? '맞춤형' : id
   }));
@@ -771,7 +816,7 @@ const historyList = computed(() => {
       model: selectedModel.value,
       aspectRatio: selectedAspectRatio.value,
       imageSize: selectedQuality.value,
-      userId: currentUserId.value,
+      userId: '',
       sysRegDtm: '-',
       prompt: '',
       poseId: selectedPose.value.id,
@@ -803,7 +848,11 @@ const isPoseClickable = (type: string) => {
   if (currentGender.value === 'custom') return (!!topImage.value || !!bottomImage.value) && !!selectedCustomModelId.value;
   return (type === 'front' ? !!topImage.value : !!bottomImage.value);
 };
-const hasHistoryOrIsDone = (id: string) => { const p = filteredPoses.value.find(x => x.id === id); return (p?.status === 'done' || p?.resultUrl) || cumulativeHistory.value.some(h => h.poseId === id && h.gender === currentGender.value); };
+const hasHistoryOrIsDone = (id: string) => { 
+  const p = filteredPoses.value.find(x => x.id === id); 
+  if (p?.status === 'done' || p?.resultUrl) return true;
+  return cumulativeHistory.value.some(h => h.poseId === id); // Removed gender filter
+};
 
 const hoveredPoseData = ref<any>(null);
 const hoverTooltipStyle = reactive({ top: '0px', left: '0px' });
@@ -906,7 +955,8 @@ const togglePoseSelection = (uniqueId: string) => {
 
 const getSampleImageUrl = (poseId: string, pt: string) => {
   const pose = poseStates.find(p => p.id === poseId && p.productType === pt && p.gender === currentGender.value);
-  const typeStr = pose?.type === 'front' ? 'front' : 'rear';
+  if (!pose) return '';
+  const typeStr = pose.type === 'front' ? 'front' : 'rear';
   return `https://ai-fitting-studio-images.s3.ap-northeast-2.amazonaws.com/sample/${currentGender.value}-${pt}-${typeStr}_${poseId.toLowerCase()}.jpg`;
 };
 
@@ -991,7 +1041,7 @@ const pollSinglePose = async (pose: PoseState) => {
             model: data.model || selectedModel.value,
             aspectRatio: data.aspectRatio || selectedAspectRatio.value,
             imageSize: data.imageSize || selectedQuality.value,
-            userId: data.userId || currentUserId.value,
+            userId: data.userId || '',
             sysRegDtm: data.sysRegDtm || new Date().toISOString(),
             prompt: data.prompt || promptText.value,
             productImageUrl: data.productImageUrl,
@@ -1062,7 +1112,6 @@ const executeJobRequest = async (pose: PoseState, fileToUse?: File | null) => {
 
   // 3. Other Settings
   formData.append('prompt', promptText.value);
-  formData.append('userId', currentUserId.value);
   formData.append('aspectRatio', selectedAspectRatio.value);
   formData.append('imageSize', selectedQuality.value);
   formData.append('model', selectedModel.value);
@@ -1122,11 +1171,13 @@ const generateAllPoses = async () => {
   }
 
   // 새 그룹 ID 생성
-  poseGroupId.value = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+  poseGroupId.value = ((typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2)) as `${string}-${string}-${string}-${string}-${string}`;
 
   for (let i = 0; i < selectedPoseIds.value.length; i++) {
     const uniqueId = selectedPoseIds.value[i];
+    if (!uniqueId) continue;
     const [id, pt] = uniqueId.split('-');
+    if (!id || !pt) continue;
     const pose = filteredPoses.value.find(p => p.id === id && p.productType === pt);
     if (!pose || !isPoseClickable(pose.type)) continue;
 
@@ -1287,7 +1338,9 @@ onUnmounted(() => stopPolling());
   border: 1px solid var(--border-color);
 }
 .view-tab {
-  width: 36px;
+  min-width: 36px;
+  width: auto;
+  padding: 0 10px;
   height: 36px;
   border-radius: 8px;
   border: none;
@@ -1300,6 +1353,7 @@ onUnmounted(() => stopPolling());
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 .view-tab:hover:not(:disabled) { background: var(--bg-color); color: var(--text-main); }
 .view-tab.active { background: var(--primary-color); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
@@ -1379,12 +1433,12 @@ onUnmounted(() => stopPolling());
 .generation-options-v2 { display: flex; gap: 0.75rem; margin-bottom: 1.25rem; }
 .generation-options-v2.row-layout { display: flex; gap: 0.75rem; }
 .popover-wrapper { position: relative; flex: 1; }
-.popover-trigger-btn { width: 100%; height: 32px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 9px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; cursor: pointer; font-size: 0.8rem; font-weight: 700; color: var(--text-main); transition: all 0.23s cubic-bezier(0.4, 0, 0.2, 1); }
+.popover-trigger-btn { width: 100%; height: 32px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 9px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; cursor: pointer; font-size: 0.8rem; font-weight: 700; color: var(--text-main); transition: all 0.23s cubic-bezier(0.4, 0, 0.2, 1); }
 .popover-trigger-btn:hover { background: var(--bg-color); border-color: #cbd5e1; }
 .popover-trigger-btn.active { background: var(--surface-color); border-color: var(--primary-color); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1); }
 .popover-trigger-btn.is-disabled { opacity: 0.5; cursor: not-allowed !important; pointer-events: none; }
 .generation-options-v2.is-disabled { pointer-events: none; opacity: 0.7; }
-.trigger-label { flex: 1; text-align: left; }
+.trigger-label { flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chevron { color: var(--text-muted); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .popover-trigger-btn.active .chevron { transform: rotate(180deg); color: var(--primary-color); }
 
@@ -1523,11 +1577,11 @@ onUnmounted(() => stopPolling());
 
 .upload-area-v2.dragging { border-color: var(--primary-color); background: var(--surface-color); transform: scale(1.02); }
 
-.custom-upload-full { grid-column: span 2; aspect-ratio: 2/1; border: 2px dashed var(--border-color); border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--input-bg); cursor: pointer; transition: var(--transition); }
+.custom-upload-full { grid-column: 1 / -1; aspect-ratio: 3/1; border: 2px dashed var(--border-color); border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--input-bg); cursor: pointer; transition: var(--transition); }
 .custom-upload-full:hover, .custom-upload-full.dragging { border-color: var(--primary-color); background: var(--surface-color); }
-.upload-icon-circle { width: 64px; height: 64px; border-radius: 50%; background: var(--bg-color); display: flex; align-items: center; justify-content: center; color: var(--primary-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 1rem; }
+.upload-icon-circle { width: 64px; height: 64px; border-radius: 50%; background: transparent; display: flex; align-items: center; justify-content: center; color: var(--primary-color); margin-bottom: 1rem; }
 .upload-msg { font-size: 0.9rem; font-weight: 700; color: var(--text-main); text-align: center; }
-.upload-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+.upload-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; margin-bottom: 1rem; }
 
 .custom-model-card { aspect-ratio: 1/1.4; border-radius: 8px; overflow: hidden; position: relative; border: 2px solid transparent; transition: var(--transition); cursor: pointer; background: var(--input-bg); }
 .custom-model-card.active { border-color: #5c7cfa; }

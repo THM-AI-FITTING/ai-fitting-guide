@@ -6,8 +6,8 @@
           <span class="gradient-text">AI Fitting</span> 포털
         </NuxtLink>
         <div class="nav-links">
-          <div class="dropdown">
-            <NuxtLink to="/test" class="nav-item">체험하기</NuxtLink>
+          <div class="dropdown" :class="{ 'is-open': isDropdownOpen, 'no-hover': isHome }">
+            <a href="#" class="nav-item" @click.prevent.stop="handleExperienceClick">체험하기</a>
             <div class="dropdown-content glass shadow-premium">
               <NuxtLink to="/test/tryon" class="dropdown-item">나한테 피팅해보기</NuxtLink>
               <NuxtLink to="/test/studio" class="dropdown-item">스튜디오용 피팅</NuxtLink>
@@ -32,29 +32,62 @@
 </template>
 
 <script setup>
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from '#app';
+
 const theme = useState('theme', () => 'light');
+const route = useRoute();
+const router = useRouter();
+const isDropdownOpen = ref(false);
+
+const isHome = computed(() => {
+  const p = route.path;
+  // baseURL이 반영된 경로와 그렇지 않은 경로 모두 체크하여 홈 페이지 판별 안정성 확보
+  return p === '/' || p === '' || p === '/ai-fitting-guide' || p === '/ai-fitting-guide/';
+});
 
 const toggleTheme = () => {
   theme.value = theme.value === 'dark' ? 'light' : 'dark';
-  // Persist to localStorage
   if (import.meta.client) {
     localStorage.setItem('theme', theme.value);
   }
 };
+
+const handleExperienceClick = (e) => {
+  // 모바일 환경에서 기본 네비게이션이 가로채는 것을 방지하기 위해 명시적으로 전파 중단 및 기본 동작 방지
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  
+  if (isHome.value) {
+    // 홈에서는 /test 페이지로 이동 (드롭다운 열지 않음)
+    isDropdownOpen.value = false;
+    router.push('/test');
+  } else {
+    // 체험 페이지(/test/*)에서는 드롭다운만 토글 (페이지 이동 없음)
+    isDropdownOpen.value = !isDropdownOpen.value;
+  }
+};
+
+// Reset dropdown on route change or click outside
+watch(() => route.path, () => {
+  isDropdownOpen.value = false;
+});
 
 onMounted(() => {
   const saved = localStorage.getItem('theme');
   if (saved) {
     theme.value = saved;
   }
-  // Remove system preference check to strictly follow "Default is Light" unless saved preference exists.
-  // Or, we can support system perference but default to Light if no preference.
-  // Since user said "Make default light", I will prioritize that.
   
-  // Optional: If you still want to respect system Dark mode if user specifically has it:
-  // else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-  //   theme.value = 'dark';
-  // }
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    const dropdown = document.querySelector('.dropdown');
+    if (dropdown && !dropdown.contains(e.target)) {
+      isDropdownOpen.value = false;
+    }
+  });
 });
 
 useHead({
@@ -167,8 +200,26 @@ useHead({
   z-index: 1001;
 }
 
-.dropdown:hover .dropdown-content {
-  display: flex;
+/* Bridge the gap between trigger and menu to maintain hover state */
+.dropdown-content::before {
+  content: "";
+  position: absolute;
+  top: -0.5rem;
+  left: 0;
+  width: 100%;
+  height: 0.5rem;
+}
+
+/* Only enable hover behavior on devices that support hover (PCs) */
+@media (hover: hover) {
+  .dropdown:not(.no-hover):hover .dropdown-content {
+    display: flex;
+  }
+}
+
+/* On mobile or when explicitly toggled via click */
+.dropdown.is-open .dropdown-content {
+  display: flex !important;
 }
 
 .dropdown-item {
@@ -212,10 +263,12 @@ useHead({
     /* justify-content: center; */ /* Optional: center links if needed */
   }
 
-  .theme-toggle {
+  .dropdown-content {
     position: absolute;
-    top: 1.2rem;
-    right: 1.5rem;
+    top: calc(100% + 1rem); /* Move it a bit down on mobile */
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface-color);
   }
 }
 </style>
