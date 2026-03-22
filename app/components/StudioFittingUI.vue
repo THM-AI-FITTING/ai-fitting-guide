@@ -1,43 +1,43 @@
 <template>
   <div class="studio-redesign-container">
-    
-    <!-- Left Sidebar: Controls -->
-    <div class="studio-sidebar-v2">
-      <div class="sidebar-content-v2">
-        <!-- API Key 섹션 -->
-        <section class="control-group">
-          <div class="group-header">
-            <div class="header-with-icon">
-              <Key :size="16" class="header-icon-small" />
-              <label class="group-title">API 인증</label>
-            </div>
-          </div>
-          <div class="api-key-input-box">
-            <div class="input-with-button">
-              <input 
-                v-model="apiKeyInput" 
-                type="password" 
-                class="modern-input" 
-                :class="{ 'is-verified': isApiKeyVerified }"
-                placeholder="API Key 입력"
-                @keyup.enter="verifyApiKey"
-              />
-              <button 
-                class="verify-btn" 
-                :disabled="isVerifyingKey || !apiKeyInput.trim()"
-                @click="verifyApiKey"
-              >
-                <div v-if="isVerifyingKey" class="mini-spinner"></div>
-                <template v-else>
-                  <Check v-if="isApiKeyVerified" :size="16" />
-                  <span v-else>인증</span>
-                </template>
-              </button>
-            </div>
-            <p v-if="isApiKeyVerified" class="success-hint-text">인증됨: {{ resolvedUserId }}</p>
-            <p v-else class="input-hint-text">발급받으신 API Key를 입력하여 인증해주세요.</p>
-          </div>
-        </section>
+    <!-- API Key Top Section -->
+    <section class="api-key-top-section">
+      <div class="api-key-header-row">
+        <div class="header-with-icon">
+          <Key :size="16" class="header-icon-small" />
+          <label class="group-title">API KEY</label>
+        </div>
+        <span class="required-hint">* 필수 입력 값입니다.</span>
+      </div>
+      <div class="api-key-input-box">
+        <div class="input-with-button">
+          <input 
+            v-model="apiKeyInput" 
+            type="password" 
+            class="modern-input" 
+            :class="{ 'is-verified': isApiKeyVerified }"
+            placeholder="인증을 위한 API Key를 입력하세요"
+            @keyup.enter="verifyApiKey"
+          />
+          <button 
+            class="verify-btn" 
+            :disabled="isVerifyingKey || !apiKeyInput.trim()"
+            @click="verifyApiKey"
+          >
+            <div v-if="isVerifyingKey" class="mini-spinner"></div>
+            <template v-else>
+              <Check v-if="isApiKeyVerified" :size="16" />
+              <span v-else>인증</span>
+            </template>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div class="studio-content-row">
+      <!-- Left Sidebar: Controls -->
+      <div class="studio-sidebar-v2">
+        <div class="sidebar-content-v2">
 
         <!-- Clothing Upload Row (Top & Bottom) -->
         <section class="control-group">
@@ -403,16 +403,15 @@
             <div v-else class="empty-preview-v2">
               <div class="empty-overlay">
                 <p class="empty-hint">비어 있음</p>
-              </div>
             </div>
           </div>
         </div>
-
       </div>
     </div>
+    </div>
 
-    <!-- Image Viewer Modal -->
-    <Teleport to="body">
+  <!-- Image Viewer Modal -->
+  <Teleport to="body">
       <Transition name="fade-fast">
         <div v-if="isImageViewerOpen" class="image-viewer-overlay" @click="isImageViewerOpen = false">
           <div class="image-viewer-layout" @click.stop>
@@ -638,6 +637,7 @@
         </div>
       </Transition>
     </Teleport>
+    </div>
   </div>
 </template>
 
@@ -2055,14 +2055,45 @@ onUnmounted(() => stopPolling());
 <style scoped>
 .studio-redesign-container {
   display: flex;
+  flex-direction: column;
   height: calc(100vh - 120px);
-  background: transparent;
   color: var(--color-text-main);
-  overflow: visible; /* 그림자가 잘리지 않도록 수정 */
+  overflow: auto;
   position: relative;
   font-family: 'Pretendard', sans-serif;
-  padding: 0.3rem; /* 전체적인 여백 확보로 그림자 공간 마련 */
+  padding: 1.5rem; 
   box-sizing: border-box;
+  gap: 1.5rem;
+}
+
+.api-key-top-section {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+  border: 1px solid var(--color-border);
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.api-key-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.required-hint {
+  color: #ef4444;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.studio-content-row {
+  display: flex;
+  flex: 1;
+  gap: 1.5rem;
+  min-height: 0;
 }
 
 .dragging { user-select: none; }
@@ -2071,10 +2102,10 @@ onUnmounted(() => stopPolling());
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  width: 500px;
-  height: 100%; /* 부모 높이에 맞춤 */
+  width: 400px;
+  height: 100%; 
   z-index: 5;
-  background: var(--color-bg-surface);
+  background: #ffffff;
   border-radius: 20px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.1);
   border: 1px solid var(--color-border);
@@ -2111,7 +2142,7 @@ onUnmounted(() => stopPolling());
   position: relative; 
   display: flex; 
   align-items: center; 
-  background: var(--color-bg-surface);
+  background: #ffffff;
   border-radius: 12px; 
   border: 1px solid var(--color-border); 
   padding: 0 12px; 
@@ -2147,12 +2178,12 @@ onUnmounted(() => stopPolling());
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  background: #f4f7fb;
+  background: #f1f4f9;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
 
-.upload-area-v2:hover, .upload-area-v2.dragging { background: var(--color-bg-header); border-color: var(--color-primary); }
+.upload-area-v2:hover, .upload-area-v2.dragging { background: #eef2f7; border-color: var(--color-primary); }
 .upload-area-v2.is-disabled {
   opacity: 0.6;
   pointer-events: none;
@@ -2172,7 +2203,7 @@ onUnmounted(() => stopPolling());
 
 .pose-tabs-v2 { display: flex; background: #eff3f8; padding: 6px; border-radius: 18px; gap: 4px; }
 .pose-tab { flex: 1; padding: 12px 6px; font-size: 0.95rem; font-weight: 700; color: #64748b; border-radius: 14px; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); background: transparent; border: none; cursor: pointer; }
-.pose-tab.active { background: var(--color-bg-surface); color: #1e293b; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+.pose-tab.active { background: #ffffff; color: #1e293b; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
 .pose-tabs-v2.is-disabled { opacity: 0.6; pointer-events: none; }
 .pose-tab:disabled { cursor: not-allowed; }
 
@@ -2197,7 +2228,7 @@ onUnmounted(() => stopPolling());
 .pose-thumb-v2 img { width: 100%; height: 100%; object-fit: cover; filter: brightness(1.05) contrast(0.95); }
 
 .metadata-group {
-  background: var(--color-bg-alt);
+  background: #f8fafc;
   border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 1.25rem;
@@ -2243,7 +2274,7 @@ body:not(.light-mode) .metadata-group {
   bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--color-bg-surface);
+  background: #ffffff;
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 4px 10px;
@@ -2269,7 +2300,7 @@ body:not(.light-mode) .metadata-group {
   padding: 12px; 
   font-size: 0.85rem; 
   resize: none; 
-  background: var(--color-bg-alt); 
+  background: var(--input-bg); 
   color: var(--color-text-main); 
   outline: none; 
   transition: border-color 0.2s; 
@@ -2303,7 +2334,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 .modern-input {
   flex: 1;
   height: 44px;
-  background: var(--color-bg-alt);
+  background: #f1f4f9;
   border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 0 14px;
@@ -2316,7 +2347,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 
 .modern-input:focus {
   border-color: var(--color-primary);
-  background: var(--color-bg-surface);
+  background: #ffffff;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
@@ -2328,8 +2359,8 @@ body:not(.light-mode) .modern-textarea::placeholder {
 .verify-btn {
   width: 80px;
   height: 44px;
-  background: var(--color-primary);
-  color: white;
+  background: #0084c7;
+  color: #ffffff;
   border: none;
   border-radius: 12px;
   font-size: 0.85rem;
@@ -2343,7 +2374,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 }
 
 .verify-btn:hover:not(:disabled) {
-  filter: brightness(1.1);
+  background: #0073ae;
   transform: translateY(-1px);
 }
 
@@ -2388,7 +2419,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 .sidebar-footer-v2 { 
   padding: 1.5rem;
   border-top: 1px solid #f1f5f9;
-  background: var(--color-bg-surface);
+  background: #ffffff;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -2424,7 +2455,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 }
 
 .popover-trigger-btn.active {
-  background: var(--color-bg-surface);
+  background: #ffffff;
   border-color: var(--color-primary);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
 }
@@ -2465,7 +2496,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
   position: absolute;
   bottom: calc(100% + 12px);
   left: 0;
-  background: var(--color-bg-surface);
+  background: #ffffff;
   border: 1px solid var(--color-border);
   border-radius: 20px;
   padding: 1.25rem;
@@ -2501,7 +2532,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 }
 
 .ratio-card-v2 {
-  background: var(--color-bg-alt);
+  background: #f1f4f9;
   border: 1.5px solid transparent;
   border-radius: 12px;
   padding: 10px 4px;
@@ -2514,12 +2545,12 @@ body:not(.light-mode) .modern-textarea::placeholder {
 }
 
 .ratio-card-v2:hover {
-  background: var(--color-bg-header);
+  background: #eef2f7;
   transform: translateY(-2px);
 }
 
 .ratio-card-v2.active {
-  background: var(--color-bg-surface);
+  background: #ffffff;
   border-color: var(--color-primary);
 }
 
@@ -2585,7 +2616,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 }
 
 .quality-option-item:hover {
-  background: var(--color-bg-alt);
+  background: #f1f4f9;
 }
 
 .quality-option-item.active {
@@ -2608,8 +2639,8 @@ body:not(.light-mode) .modern-textarea::placeholder {
 .generate-action-btn-new {
   width: 100%;
   height: 60px;
-  background: #f8faff;
-  color: #6366f1;
+  background: #0084c7;
+  color: #ffffff;
   border: none;
   border-radius: 18px;
   display: flex;
@@ -2620,13 +2651,13 @@ body:not(.light-mode) .modern-textarea::placeholder {
   font-weight: 800;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.04);
+  box-shadow: 0 4px 20px rgba(0, 132, 199, 0.3);
 }
 
 .generate-action-btn-new:hover:not(:disabled) {
-  background: #f0f4ff;
+  background: #0073ae;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 132, 199, 0.4);
 }
 
 .generate-action-btn-new:active:not(:disabled) {
@@ -2643,8 +2674,8 @@ body:not(.light-mode) .modern-textarea::placeholder {
 .mini-spinner-white {
   width: 22px;
   height: 22px;
-  border: 2.5px solid rgba(99, 102, 241, 0.15);
-  border-top-color: #6366f1;
+  border: 2.5px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #ffffff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -2685,7 +2716,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 .preview-card-v2 { 
   width: 100%; 
   height: 100%; 
-  background: var(--color-bg-surface); 
+  background: #ffffff; 
   border: 1px solid var(--color-border);
   border-radius: 20px; 
   display: flex; 
@@ -2772,7 +2803,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
   height: auto;
   max-width: 420px;
   aspect-ratio: 3/4; /* 로딩 카드만 고정 비율 유지 */
-  background: var(--color-bg-surface);
+  background: #ffffff;
   border-radius: 20px;
   border: 1px solid var(--color-border);
   box-shadow: 0 15px 45px rgba(0,0,0,0.1);
@@ -2828,7 +2859,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: var(--color-bg-surface);
+  background: #ffffff;
   border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
@@ -2905,11 +2936,11 @@ body:not(.light-mode) .modern-textarea::placeholder {
 
 .pose-view-selector-v2 {
   display: flex;
-  background: var(--color-bg-alt);
+  background: #f1f4f9;
   padding: 4px;
   border-radius: 12px;
   gap: 4px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-color);
 }
 .view-tab {
   min-width: 36px;
@@ -2920,15 +2951,16 @@ body:not(.light-mode) .modern-textarea::placeholder {
   background: transparent;
   font-weight: 700;
   font-size: 0.85rem;
-  color: var(--color-text-muted);
+  color: #94a3b8;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
 }
-.view-tab:hover:not(:disabled) { background: var(--color-bg-header); color: var(--color-text-main); }
-.view-tab.active { background: var(--color-primary); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.view-tab:hover:not(:disabled) { background: #eef2f7;
+ color: #64748b; }
+.view-tab.active { background: #0084c7; color: #fff; box-shadow: 0 4px 12px rgba(0, 132, 199, 0.2); }
 .view-tab:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* Slider Styles */
@@ -2940,7 +2972,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
   border-radius: 12px;
   cursor: grab;
   user-select: none;
-  background: var(--color-bg-alt);
+  background: #f1f4f9;
   padding: 1rem;
 }
 
@@ -2970,7 +3002,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
   transform: translateY(-50%);
   width: 48px;
   height: 48px;
-  background: var(--color-bg-surface);
+  background: #ffffff;
   border: 1px solid var(--color-border);
   border-radius: 50%;
   display: flex;
@@ -3027,7 +3059,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
   border: 2px dashed var(--color-border);
   border-radius: 12px;
   margin-top: 0;
-  background: var(--color-bg-alt);
+  background: #f1f4f9;
   min-height: 120px;
 }
 .gallery-scroller-v2 { display: flex; gap: 1rem; padding-bottom: 0; align-items: center; }
@@ -3051,7 +3083,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 .radiant-loader { width: 40px; height: 40px; border: 3px solid var(--color-border); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s infinite linear; }
 
 .alert-overlay-modern { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 10000; display: flex; align-items: center; justify-content: center; }
-.alert-content-modern { background: var(--color-bg-surface); width: 360px; padding: 2.5rem; border: 1px solid var(--color-border); border-radius: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.alert-content-modern { background: #ffffff; width: 360px; padding: 2.5rem; border: 1px solid var(--color-border); border-radius: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
 .alert-icon-box { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 .alert-icon-box.info { background: #f0f4ff; color: #5c7cfa; }
 .alert-icon-box.error { background: #fff1f0; color: #ff4d4f; }
@@ -3321,7 +3353,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 
 /* Custom Model Modal Styles */
 .custom-model-modal {
-  background: var(--color-bg-surface);
+  background: #ffffff;
   width: 520px; /* 3x2 그리드에 최적화된 너비 */
   max-width: 90vw;
   border: 1px solid var(--color-border);
@@ -3377,7 +3409,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
   overflow: hidden;
   border: 2px solid transparent;
   transition: all 0.2s;
-  background: var(--color-bg-alt);
+  background: #f1f4f9;
   padding-bottom: 6px;
   text-align: center;
 }
@@ -3417,7 +3449,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 }
 
 .modal-nav-btn {
-  background: var(--color-bg-alt);
+  background: #f1f4f9;
   border: none;
   width: 28px;
   height: 28px;
@@ -3518,7 +3550,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 }
 
 .preview-tooltip-inner {
-  background: var(--color-bg-surface);
+  background: #ffffff;
   border: 1px solid var(--color-border);
   border-radius: 20px;
   overflow: hidden;
@@ -3531,7 +3563,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 .preview-img-box {
   width: 100%;
   aspect-ratio: 1/1.4;
-  background: var(--color-bg-alt);
+  background: #f1f4f9;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3549,7 +3581,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  background: var(--color-bg-surface);
+  background: #ffffff;
 }
 
 .preview-info .pose-name {
@@ -3597,21 +3629,21 @@ body:not(.light-mode) .modern-textarea::placeholder {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  background: var(--color-bg-alt);
+  background: #f1f4f9;
   transition: all 0.3s ease;
   gap: 12px;
 }
 
 .custom-upload-full:hover, .custom-upload-full.dragging {
   border-color: var(--color-primary);
-  background: var(--color-bg-header);
+  background: #eef2f7;
 }
 
 .upload-icon-circle {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: var(--color-bg-surface);
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3641,7 +3673,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
   position: relative;
   border: 2px solid transparent;
   cursor: pointer;
-  background: var(--color-bg-alt);
+    background: #f1f4f9;
   transition: all 0.2s;
 }
 
@@ -3692,7 +3724,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 .custom-model-add-card:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
-  background: var(--color-bg-header);
+  background: #eef2f7;
 }
 
 .custom-model-card.generating {
