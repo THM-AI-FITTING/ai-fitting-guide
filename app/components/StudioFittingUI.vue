@@ -2061,7 +2061,6 @@ onUnmounted(() => stopPolling());
   overflow: auto;
   position: relative;
   font-family: 'Pretendard', sans-serif;
-  padding: 1.5rem; 
   box-sizing: border-box;
   gap: 1.5rem;
 }
@@ -2069,7 +2068,6 @@ onUnmounted(() => stopPolling());
 .api-key-top-section {
   background: #ffffff;
   border-radius: 20px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.1);
   border: 1px solid var(--color-border);
   padding: 1.5rem 2rem;
   display: flex;
@@ -2107,7 +2105,6 @@ onUnmounted(() => stopPolling());
   z-index: 5;
   background: #ffffff;
   border-radius: 20px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.1);
   border: 1px solid var(--color-border);
   overflow: hidden;
 }
@@ -2294,29 +2291,33 @@ body:not(.light-mode) .metadata-group {
 
 .modern-textarea { 
   width: 100%; 
-  height: 80px; 
-  border: 1px solid var(--color-border); 
-  border-radius: 12px; 
-  padding: 12px; 
-  font-size: 0.85rem; 
+  height: 120px; 
+  border: 1px solid #e2e8f0; 
+  border-radius: 20px; 
+  padding: 1.25rem 1.5rem; 
+  font-size: 0.95rem; 
   resize: none; 
-  background: var(--input-bg); 
+  background: #f1f5f9; 
   color: var(--color-text-main); 
   outline: none; 
-  transition: border-color 0.2s; 
-  font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+  transition: all 0.2s; 
+  font-family: 'Pretendard', sans-serif;
+  line-height: 1.6;
 }
 .modern-textarea::placeholder { 
-  font-weight: 400; 
-  opacity: 0.6; 
-  color: var(--color-text-muted); 
-  font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+  font-weight: 500; 
+  opacity: 0.7; 
+  color: #94a3b8; 
 }
 body:not(.light-mode) .modern-textarea::placeholder {
   color: #ccc;
   opacity: 0.8;
 }
-.modern-textarea:focus { border-color: #5c7cfa; }
+.modern-textarea:focus { 
+  border-color: #0084c7; 
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(0, 132, 199, 0.1);
+}
 .modern-textarea:disabled { opacity: 0.6; background: #eee; cursor: not-allowed; }
 
 .api-key-input-box {
@@ -2335,7 +2336,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
   flex: 1;
   height: 44px;
   background: #f1f4f9;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 0 14px;
   font-size: 0.9rem;
@@ -2729,7 +2730,6 @@ body:not(.light-mode) .modern-textarea::placeholder {
   min-height: 0;
   overflow: visible; 
 }
-.shadow-premium { box-shadow: 0 15px 35px rgba(0,0,0,0.05); }
 
 /* Premium Glowing Wave Effect */
 .generating-vibe {
