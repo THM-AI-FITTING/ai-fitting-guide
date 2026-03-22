@@ -2508,7 +2508,7 @@ body:not(.light-mode) .modern-textarea::placeholder {
 }
 
 .ratio-popover { 
-  width: 440px; 
+  width: 352px; 
   right: 0;
   left: auto;
 }
