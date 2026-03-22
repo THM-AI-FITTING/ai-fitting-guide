@@ -3,11 +3,22 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-sticky">
-        <h3 class="sidebar-title">API Reference</h3>
+        <h3 class="sidebar-title">내 피팅해보기 (Basic)</h3>
         <nav class="sidebar-nav">
           <a href="#upload" :class="{ active: activeSection === 'upload' }" @click.prevent="scrollTo('upload')">
             <span class="method post">POST</span> /upload
           </a>
+        </nav>
+
+        <h3 class="sidebar-title" style="margin-top: 2rem;">스튜디오 (Studio)</h3>
+        <nav class="sidebar-nav">
+          <a href="#studio-upload" :class="{ active: activeSection === 'studio-upload' }" @click.prevent="scrollTo('studio-upload')">
+            <span class="method post">POST</span> /studio/upload
+          </a>
+        </nav>
+
+        <h3 class="sidebar-title" style="margin-top: 2rem;">공통 (Common)</h3>
+        <nav class="sidebar-nav">
           <a href="#result" :class="{ active: activeSection === 'result' }" @click.prevent="scrollTo('result')">
             <span class="method get">GET</span> /result
           </a>
@@ -131,6 +142,121 @@ System.out.println(response.body());</code></pre>
 
       <div class="divider"></div>
 
+      <!-- Studio Upload Section -->
+      <section id="studio-upload" class="doc-section">
+        <div class="header-group">
+          <h2 class="gradient-text">POST /studio/upload</h2>
+          <p>새로운 스튜디오(고급 AI 피팅) 작업을 시작합니다.</p>
+        </div>
+
+        <div class="doc-block glass">
+          <h3>설명</h3>
+          <p>기본 AI 피팅 외에, 포즈 유지, 부분 적용, 프롬프트 기반 커스텀 피팅 등을 지원하는 스튜디오 피팅 API입니다. <code>poseGroupId</code>와 <code>slot</code> 등을 활용하여 연관된 작업물을 하나로 묶어 관리할 수 있습니다.</p>
+        </div>
+
+        <div class="doc-block">
+          <h3>요청 헤더</h3>
+          <table class="glass">
+            <thead>
+              <tr><th>키</th><th>필수 여부</th><th>설명</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>x-api-key</td><td>예</td><td>인증을 위한 파트너 API 키입니다.</td></tr>
+              <tr><td>Content-Type</td><td>예</td><td><code>multipart/form-data</code>여야 합니다.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="doc-block">
+          <h3>Form Data 파라미터</h3>
+          <table class="glass">
+            <thead>
+              <tr><th>파라미터</th><th>타입</th><th>필수 여부</th><th>설명</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>poseGroupId</td><td>String</td><td>예</td><td>관련된 피팅 작업들을 묶어주는 고유 그룹 식별자</td></tr>
+              <tr><td>slot</td><td>String</td><td>예</td><td>뷰 타입/슬롯. 기본 포즈: <code>a</code>, <code>b</code>(Front), <code>c</code>, <code>d</code>(Back) 또는 커스텀 <code>e</code></td></tr>
+              <tr><td>person</td><td>File</td><td>예</td><td>입력 인물/마네킹 이미지 (필수)</td></tr>
+              <tr><td>product</td><td>File</td><td>예</td><td>적용할 의류/상품 이미지 (필수)</td></tr>
+              <tr><td>userId</td><td>String</td><td>아니오</td><td>이력 추적 및 토큰 격리를 위한 파트너 측 엔드 유저 식별자</td></tr>
+              <tr><td>prompt</td><td>String</td><td>아니오</td><td>커스텀 피팅 시 AI 생성에 참조할 디테일 텍스트 프롬프트</td></tr>
+              <tr><td>aspectRatio</td><td>String</td><td>아니오</td><td>결과 해상도 비율 (예: <code>2:3</code>(기본), <code>3:4</code>, <code>9:16</code>, <code>1:1</code> 등)</td></tr>
+              <tr><td>imageSize</td><td>String</td><td>아니오</td><td>결과 리스케일 옵션 (예: <code>1K</code>, <code>2K</code>, <code>4K</code>)</td></tr>
+              <tr><td>model</td><td>String</td><td>아니오</td><td>특정 모델/알고리즘을 강제할 때 사용하는 프리셋 키</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="doc-block">
+          <h3>요청 예시</h3>
+          <div class="code-wrapper glass" :class="{ 'collapsed': !expandedBlocks.studioUpload }">
+            <div class="code-header" @click="toggleBlock('studioUpload')">
+              <div class="lang-tabs" @click.stop>
+                <button :class="{ active: selectedLangs.studioUpload === 'js' }" @click="selectedLangs.studioUpload = 'js'">JavaScript</button>
+                <button :class="{ active: selectedLangs.studioUpload === 'java' }" @click="selectedLangs.studioUpload = 'java'">Java</button>
+              </div>
+              <div class="code-actions">
+                <button class="copy-btn" @click.stop="copyCode(selectedLangs.studioUpload === 'js' ? 'studio-upload-code-js' : 'studio-upload-code-java')">Copy</button>
+                <div class="toggle-icon">{{ expandedBlocks.studioUpload ? '▲' : '▼' }}</div>
+              </div>
+            </div>
+            
+            <pre v-if="selectedLangs.studioUpload === 'js'" id="studio-upload-code-js"><code class="language-javascript">const formData = new FormData();
+formData.append('poseGroupId', 'group_abcd123');
+formData.append('slot', 'a');
+formData.append('person', personFileInput.files[0]);
+formData.append('product', productFileInput.files[0]);
+formData.append('userId', 'user_123');
+formData.append('aspectRatio', '3:4');
+formData.append('prompt', 'modern, stylish, high-resolution');
+
+const response = await fetch('https://api.yourservice.com/studio/upload', {
+  method: 'POST',
+  headers: { 'x-api-key': 'YOUR_API_KEY' },
+  body: formData
+});
+
+const data = await response.json();
+console.log(data);</code></pre>
+
+            <pre v-if="selectedLangs.studioUpload === 'java'" id="studio-upload-code-java"><code class="language-java">// Using Java 11+ HttpClient
+import java.net.http.*;
+import java.nio.file.Path;
+
+var client = HttpClient.newHttpClient();
+var multipartBody = MultipartBodyPublisher.newBuilder()
+    .addPart("poseGroupId", "group_abcd123")
+    .addPart("slot", "a")
+    .addPart("person", Path.of("person.jpg"))
+    .addPart("product", Path.of("product.jpg"))
+    .addPart("userId", "user_123")
+    .addPart("aspectRatio", "3:4")
+    .build();
+
+var request = HttpRequest.newBuilder()
+    .uri(URI.create("https://api.yourservice.com/studio/upload"))
+    .header("x-api-key", "YOUR_API_KEY")
+    .header("Content-Type", "multipart/form-data; boundary=" + multipartBody.getBoundary())
+    .POST(multipartBody.asPublisher())
+    .build();
+
+var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+System.out.println(response.body());</code></pre>
+          </div>
+        </div>
+
+        <div class="doc-block">
+          <h3>응답 예시</h3>
+          <pre class="glass"><code>{
+  "requestId": "req_20260201_xyz987",
+  "status": "PROCESSING",
+  "message": "스튜디오 작업 접수 완료"
+}</code></pre>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
       <!-- Result Section -->
       <section id="result" class="doc-section">
         <div class="header-group">
@@ -243,9 +369,9 @@ public void pollResult(String requestId) throws Exception {
         <div class="doc-block glass">
           <h3>설명</h3>
           <p>피팅 작업의 페이지네이션된 목록을 가져옵니다. <code>userId</code> 필터링을 지원하여 특정 사용자의 이력만 표시하거나, 필터가 없는 경우 해당 파트너의 모든 작업을 표시합니다.</p>
-          <div class="info-alert glass">
-            <span class="info-icon">💡</span>
-            <p><strong>토큰 기반 페이징:</strong> 본 API는 DynamoDB의 성능 최적화를 위해 오프셋 방식이 아닌 <strong>토큰 기반 페이징</strong>을 사용합니다. 응답의 <code>nextId</code>와 <code>nextSort</code>를 다음 요청의 <code>lastId</code>와 <code>lastSort</code> 파라미터로 전달하여 다음 페이지를 조회할 수 있습니다.</p>
+          <div class="info-alert glass" style="border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05);">
+            <span class="info-icon">⚠️</span>
+            <p><strong>[주의] 토큰 기반 페이징 전용:</strong> 본 API는 대규모 트래픽 및 DynamoDB의 성능 최적화를 위해 전통적인 오프셋 방식(page, offset)을 <strong>지원하지 않습니다</strong>. 이전 응답에서 제공된 <code>nextId</code>와 <code>nextSort</code> 값을 반드시 다음 요청의 <code>lastId</code>와 <code>lastSort</code> 파라미터로 그대로 전달하여 다음 페이지를 조회해야 합니다. (값이 null이면 마지막 페이지입니다.)</p>
           </div>
         </div>
 
@@ -377,16 +503,18 @@ import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
 
 const activeSection = ref('upload')
-const sections = ['upload', 'result', 'history']
+const sections = ['upload', 'studio-upload', 'result', 'history']
 
 const expandedBlocks = ref({
   upload: true,
+  studioUpload: true,
   polling: true,
   history: true
 })
 
 const selectedLangs = ref({
   upload: 'js',
+  studioUpload: 'js',
   polling: 'js',
   history: 'js'
 })
